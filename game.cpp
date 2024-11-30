@@ -7,7 +7,7 @@
 #include "headers/game.hpp"
 #include "headers/json.hpp"
 
-using std::cin, std::cout, std::endl;
+using std::cin, std::cout, std::cerr, std::endl;
 using std::string;
 using nlohmann::json;
 
@@ -20,16 +20,13 @@ json to_json(const GAME_DATA& data) {
 
 // Convert json to game data
 bool from_json(const json& j, GAME_DATA& data) {
-    try
-    {
+    try {
         string pps_str;
         j.at("pps").get_to(pps_str);
         data.pps = bigint(pps_str);
         return true;
-    }
-    catch(const std::exception& e)
-    {
-        std::cerr << e.what() << '\n';
+    } catch(const std::exception& e) {
+        cerr << e.what() << endl;
         return false;
     }
     
@@ -47,8 +44,7 @@ void save(GAME_DATA& data, string filename) {
         cout << "Error: Could not open file " << filename << endl;
         return;
     }
-    o << j.dump(4) << std::endl;
-    o.close();
+    o << j.dump(0) << std::endl;
 
     cout << "Game data saved!" << endl;
 }
@@ -63,8 +59,14 @@ GAME_DATA load(string filename) {
         cout << "File not found, creating new game data..." << endl;
         return DEFAULT_GAME_DATA;
     }
-    json j = json::parse(file);
-    file.close();
+
+    json j;
+    try {
+        file >> j;
+    } catch(const std::exception& e) {
+        cout << "Error: Could not parse json! Is data corrupted?" << endl;
+        throw std::runtime_error("Could not parse json");
+    }
 
     GAME_DATA data;
     bool success = from_json(j, data);
