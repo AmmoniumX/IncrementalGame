@@ -36,3 +36,6 @@ bin/
 
 # VS Code
 .vscode/
+
+# Game data
+saves/

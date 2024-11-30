@@ -12,8 +12,11 @@ SRCS = game.cpp
 # Build Rules
 all: $(TARGET)
 
-$(TARGET): $(SRCS)
-	$(CXX) $(CXXFLAGS) $(SRCS) -o $(TARGET) $(LDFLAGS)
+bin/game: game.o
+	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+game.o: game.cpp headers/game.hpp headers/json.hpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 # Clean Rule
 clean:
