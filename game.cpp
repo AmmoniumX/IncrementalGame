@@ -70,7 +70,7 @@ GAME_DATA load(string filename) {
     bool success = from_json(j, data);
     if (!success) {
         cout << "Error: Could not load game data! Is data corrupted?" << endl;
-        return GAME_DATA();
+        throw std::runtime_error("Could not load game data");
     }
 
     cout << "Game data loaded!" << endl;
