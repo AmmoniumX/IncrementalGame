@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+# Bin directory
+bin/
+
+# VS Code
+.vscode/
