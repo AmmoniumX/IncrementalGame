@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <getopt.h>
+#include <ctime>
 
 #include "headers/game.hpp"
 #include "headers/json.hpp"
@@ -10,6 +11,8 @@
 using std::cin, std::cout, std::cerr, std::endl;
 using std::string;
 using nlohmann::json;
+
+const uint FRAME_RATE = 15;
 
 // Convert game data to json
 json to_json(const GAME_DATA& data) {
@@ -79,27 +82,90 @@ GAME_DATA load(string filename) {
     return data;
 }
 
-// Main game loop
-bool update(GAME_DATA& data) {
+// Main render function
+void render(const GAME_DATA& data) {
     clear();
     printw("Hello, world!");
-    printw("\nPoints: %s", data.pps.str().c_str());
+    printw("\nPoints: %d", (int) data.pps);
     printw("\nENTER to gain points, q to quit");
-    
-    char c = getch();
-    switch (c)
-    {
-    case 'q':
-        return false;
-    case '\n':
-        data.pps += 1;
-        break;
-    default:
-        cout << "Unknown command: " << c << endl;
-        break;
-    }
     refresh();
+}
+
+enum class UPDATE_STATE {
+    NO_CHANGES,
+    CHANGES,
+    QUIT
+};
+
+UPDATE_STATE handle_input(GAME_DATA& data, char input) {
+    UPDATE_STATE state = UPDATE_STATE::NO_CHANGES;
+    switch (input) {
+        case 'q':
+            return UPDATE_STATE::QUIT;
+        case '\n':
+            data.pps += 1;
+            state = UPDATE_STATE::CHANGES;
+            break;
+        default:
+            printw("Unknown command: %c\n (%d)", input, (int)input);
+            break;
+    }
+    return state;
+}
+
+bool update(GAME_DATA& data) {
+    time_t start = time(nullptr);
+
+    char input = getch();
+    if (input == ERR) {
+        return true;
+    }
+
+    UPDATE_STATE state = handle_input(data, input);
+    
+    switch (state) {
+        case UPDATE_STATE::QUIT:
+            return false;
+        case UPDATE_STATE::CHANGES:
+            render(data);
+            break;
+        case UPDATE_STATE::NO_CHANGES:
+            break;
+    }
+
+    // Calculate time to sleep
+    time_t end = time(nullptr);
+    double delta = difftime(end, start);
+    double sleep_time = 1.0 / FRAME_RATE - delta;
+    if (sleep_time > 0) {
+        timespec ts;
+        ts.tv_sec = 0;
+        ts.tv_nsec = sleep_time * 1e9;
+        nanosleep(&ts, nullptr);
+    }
+
     return true;
+}
+
+int run(string savefile) {
+    // Load game data
+    GAME_DATA data = load(savefile);
+    
+    // Initialize ncurses
+    initscr();
+    nodelay(stdscr, TRUE);
+    keypad(stdscr, TRUE);
+    curs_set(0);
+
+    // Main game loop
+    render(data);
+    while (update(data)) { }
+
+    // Cleanup
+    endwin();
+    save(data, savefile);
+
+    return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -121,16 +187,5 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // Load game data
-    GAME_DATA data = load(savefile);
-
-    // Main game loop
-    initscr();
-    while (update(data)) { }
-    endwin();
-
-    // Save game data
-    save(data, savefile);
-
-    return 0;
+    return run(savefile);
 }
