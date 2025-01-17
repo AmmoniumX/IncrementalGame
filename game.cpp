@@ -3,21 +3,19 @@
 #include <string>
 #include <fstream>
 #include <getopt.h>
-#include <ctime>
 
-#include "headers/game.hpp"
-#include "headers/json.hpp"
+#include "headers/game.hh"
+#include "headers/json.hh"
+#include "headers/render.hh"
 
 using std::cin, std::cout, std::cerr, std::endl;
 using std::string;
 using nlohmann::json;
 
-const uint FRAME_RATE = 15;
-
 // Convert game data to json
 json to_json(const GAME_DATA& data) {
     return json{
-        {"pps", data.pps.str()}
+        {"points", data.points.str()}
     };
 }
 
@@ -25,8 +23,8 @@ json to_json(const GAME_DATA& data) {
 bool from_json(const json& j, GAME_DATA& data) {
     try {
         string pps_str;
-        j.at("pps").get_to(pps_str);
-        data.pps = bigint(pps_str);
+        j.at("points").get_to(pps_str);
+        data.points = bigint(pps_str);
         return true;
     } catch(const std::exception& e) {
         cerr << e.what() << endl;
@@ -82,87 +80,42 @@ GAME_DATA load(string filename) {
     return data;
 }
 
-// Main render function
-void render(const GAME_DATA& data) {
-    clear();
-    printw("Hello, world!");
-    printw("\nPoints: %d", (int) data.pps);
-    printw("\nENTER to gain points, q to quit");
-    refresh();
-}
-
-enum class UPDATE_STATE {
-    NO_CHANGES,
-    CHANGES,
-    QUIT
-};
-
-UPDATE_STATE handle_input(GAME_DATA& data, char input) {
-    UPDATE_STATE state = UPDATE_STATE::NO_CHANGES;
-    switch (input) {
-        case 'q':
-            return UPDATE_STATE::QUIT;
-        case '\n':
-            data.pps += 1;
-            state = UPDATE_STATE::CHANGES;
-            break;
-        default:
-            printw("Unknown command: %c\n (%d)", input, (int)input);
-            break;
-    }
-    return state;
-}
-
-bool update(GAME_DATA& data) {
-    time_t start = time(nullptr);
-
-    char input = getch();
-    if (input == ERR) {
-        return true;
-    }
-
-    UPDATE_STATE state = handle_input(data, input);
-    
-    switch (state) {
-        case UPDATE_STATE::QUIT:
-            return false;
-        case UPDATE_STATE::CHANGES:
-            render(data);
-            break;
-        case UPDATE_STATE::NO_CHANGES:
-            break;
-    }
-
-    // Calculate time to sleep
-    time_t end = time(nullptr);
-    double delta = difftime(end, start);
-    double sleep_time = 1.0 / FRAME_RATE - delta;
-    if (sleep_time > 0) {
-        timespec ts;
-        ts.tv_sec = 0;
-        ts.tv_nsec = sleep_time * 1e9;
-        nanosleep(&ts, nullptr);
-    }
-
-    return true;
-}
-
 int run(string savefile) {
     // Load game data
     GAME_DATA data = load(savefile);
+
+    // Create and setup ScreenManager and Screen
+    ScreenManager &manager = ScreenManager::getInstance();
+    ScreenPtr mainScreen = std::make_shared<Screen>();
+    TextPtr mainScreenTitle = mainScreen->putText(0, 0, "Hello, world!");
+    std::string points = "Points: " + data.points.str();
+    TextPtr mainScreenScore = mainScreen->putText(1, 0, points);
+    TextPtr mainScreenInfo = mainScreen->putText(2, 0, "Press 'ENTER' to earn points, 'q' to quit");
+
+    mainScreen->setOnTick([&](GAME_DATA *data, const char input) {
+        mainScreenScore->setText("Points: " + data->points.str());
+        switch (input) {
+            case 'q':
+                return true;
+            case '\n':
+                data->points += 1;
+                return false;
+            case -1:
+                return false;
+            default:
+                mvprintw(LINES-1, 0, "Unknown command: %c (%d)", input, (int)input);
+                return false;
+        }
+    });
+    manager.initialize(&data, mainScreen);
     
     // Initialize ncurses
-    initscr();
-    nodelay(stdscr, TRUE);
-    keypad(stdscr, TRUE);
-    curs_set(0);
+    setupNcurses();
 
     // Main game loop
-    render(data);
-    while (update(data)) { }
+    manager.run();
 
     // Cleanup
-    endwin();
     save(data, savefile);
 
     return 0;

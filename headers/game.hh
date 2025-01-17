@@ -1,6 +1,6 @@
 #pragma once
 #include <boost/multiprecision/gmp.hpp>
-#include "json.hpp"
+#include "json.hh"
 #include <string>
 
 typedef boost::multiprecision::mpz_int bigint;
@@ -8,11 +8,11 @@ using std::string;
 using nlohmann::json;
 
 typedef struct {
-    bigint pps;
+    bigint points;
 } GAME_DATA;
 
 GAME_DATA DEFAULT_GAME_DATA = {
-    pps: bigint(0)
+    points: bigint(0)
 };
 
 json to_json(const GAME_DATA& data);
