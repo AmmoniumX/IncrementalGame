@@ -142,6 +142,7 @@ public:
     }
 
     void initialize(GAME_DATA *data, const ScreenPtr screen) {
+        if (this->data || this->currentScreen) throw std::runtime_error("ScreenManager already initialized");
         this->data = data;
         this->currentScreen = screen;
     }
@@ -162,6 +163,8 @@ public:
     }
 
     void run() {
+        if (!data || !currentScreen) throw std::runtime_error("ScreenManager is not initialized!");
+
         do {
             // Run a single frame
             time_t start = time(nullptr);
