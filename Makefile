@@ -28,13 +28,9 @@ clean:
 	rm -f $(OBJS) $(TARGET)
 
 debug: CXXFLAGS += $(DEBUGFLAGS)
-debug: 
-	$(MAKE) clean
-	$(MAKE) all
+debug: all
 
 release: CXXFLAGS += $(OPTIMIZATIONFLAGS)
-release:
-	$(MAKE) clean
-	$(MAKE) all
+release: all
 
 .PHONY: all clean debug release
