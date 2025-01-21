@@ -16,7 +16,6 @@ int run(string savefile) {
     GAME_DATA data = load(savefile);
 
     // Create and setup ScreenManager and Screen
-    ScreenManager &manager = ScreenManager::getInstance();
     ScreenPtr mainScreen = std::make_shared<Screen>();
     TextPtr mainScreenTitle = mainScreen->putText(0, 0, "Hello, world!");
     std::string points = "Points: " + data.points.str();
@@ -38,7 +37,7 @@ int run(string savefile) {
                 return false;
         }
     });
-    manager.initialize(&data, mainScreen);
+    ScreenManager &manager = ScreenManager::getInstance(&data, mainScreen);
     
     // Initialize ncurses
     setupNcurses();

@@ -124,27 +124,25 @@ typedef std::shared_ptr<Screen> ScreenPtr;
 class ScreenManager { // Singleton class
 private:
     // std::vector<ScreenPtr> loadedScreens;
+    GAME_DATA *data = nullptr;
     ScreenPtr currentScreen = nullptr;
+    std::shared_ptr<Screen> nextScreen = nullptr;
     bool screenChange = false;
     bool exitRequested = false;
-    std::shared_ptr<Screen> nextScreen = nullptr;
-    GAME_DATA *data = nullptr;
-    ScreenManager() {} // Private constructor for singleton pattern
-public:
+
+    // Private constructor for singleton
+    ScreenManager(GAME_DATA *data, const ScreenPtr screen) : 
+        data(data), currentScreen(screen) {};
+    
     // Deleted copy constructor and assignment operator
     ScreenManager(const ScreenManager&) = delete;
     ScreenManager& operator=(const ScreenManager&) = delete;
 
+public:
     // Static method to get the singleton instance
-    static ScreenManager& getInstance() {
-        static ScreenManager instance;
+    static ScreenManager& getInstance(GAME_DATA *data, const ScreenPtr screen) {
+        static ScreenManager instance(data, screen);
         return instance;
-    }
-
-    void initialize(GAME_DATA *data, const ScreenPtr screen) {
-        if (this->data || this->currentScreen) throw std::runtime_error("ScreenManager already initialized");
-        this->data = data;
-        this->currentScreen = screen;
     }
 
     std::shared_ptr<Screen> getCurrentScreen() const { return currentScreen; }
