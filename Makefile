@@ -1,13 +1,13 @@
 # Compiler Flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -I/usr/include
+CXXFLAGS = -Wall -Wextra -I/usr/include -std=c++23
 
 # Target-dependent Flags
 DEBUGFLAGS = -g -O0
 OPTIMIZATIONFLAGS = -O3
 
 # Libraries
-LDFLAGS = -lgmp -lgmpxx -lncurses
+LDFLAGS = -lncurses
 
 # Target and Source Files
 TARGET = bin/game
@@ -20,7 +20,7 @@ all: $(TARGET)
 bin/game: game.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-game.o: game.cpp headers/game.hh headers/json.hh headers/render.hh
+game.o: game.cpp headers/game.hh headers/json.hh headers/render.hh headers/BigNum.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 # Phony Targets

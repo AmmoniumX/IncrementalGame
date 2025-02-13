@@ -7,6 +7,7 @@
 #include "headers/game.hh"
 #include "headers/json.hh"
 #include "headers/render.hh"
+#include "headers/BigNum.hh"
 
 using std::cout, std::endl;
 using nlohmann::json;
@@ -18,17 +19,17 @@ int run(string savefile) {
     // Create and setup ScreenManager and Screen
     ScreenPtr mainScreen = std::make_shared<Screen>();
     TextPtr mainScreenTitle = mainScreen->putText(0, 0, "Hello, world!");
-    std::string points = "Points: " + data.points.str();
+    std::string points = "Points: " + data.points.to_string();
     TextPtr mainScreenScore = mainScreen->putText(1, 0, points);
     TextPtr mainScreenInfo = mainScreen->putText(2, 0, "Press 'ENTER' to earn points, 'q' to quit");
 
-    mainScreen->setOnTick([&](GAME_DATA *data, const char input) {
-        mainScreenScore->setText("Points: " + data->points.str());
+    mainScreen->setOnTick([&](GAME_DATA *dataPtr, const char input) {
+        mainScreenScore->setText("Points: " + dataPtr->points.to_string());
         switch (input) {
             case 'q':
                 return true;
             case '\n':
-                data->points += 1;
+                dataPtr->points++;
                 return false;
             case -1:
                 return false;

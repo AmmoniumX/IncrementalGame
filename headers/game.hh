@@ -1,35 +1,35 @@
 #pragma once
 #include <boost/multiprecision/gmp.hpp>
-#include "json.hh"
 #include <iostream>
 #include <fstream>
 #include <string>
 
-typedef boost::multiprecision::mpz_int bigint;
+#include "json.hh"
+#include "BigNum.hh"
 using std::string;
 using nlohmann::json;
 
 typedef struct {
-    bigint points;
+    BigNum points;
 } GAME_DATA;
 
 GAME_DATA DEFAULT_GAME_DATA = {
-    points: bigint(0)
+    points: BigNum(0)
 };
 
 // Convert game data to json
 json to_json(const GAME_DATA& data) {
     return json{
-        {"points", data.points.str()}
+        {"points", data.points.to_string()}
     };
 }
 
 // Convert json to game data
 bool from_json(const json& j, GAME_DATA& data) {
     try {
-        string pps_str;
-        j.at("points").get_to(pps_str);
-        data.points = bigint(pps_str);
+        string pts_str;
+        j.at("points").get_to(pts_str);
+        data.points = BigNum(pts_str);
         return true;
     } catch(const std::exception& e) {
         std::cerr << e.what() << std::endl;
