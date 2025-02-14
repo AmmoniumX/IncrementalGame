@@ -12,11 +12,7 @@
 #include "game.hh"
 
 // Constants
-const uint FRAME_RATE = 15;
-
-// Function prototypes
-void setupNcurses();
-void renderText(const std::string& text, int x, int y, int colorPair);
+inline const uint FRAME_RATE = 15;
 
 // Ncurses setup
 void setupNcurses() {
@@ -29,7 +25,15 @@ void setupNcurses() {
     curs_set(0);            // Hide the cursor
 }
 
-// Classes
+/*
+ * @class Text
+ * @brief A class to represent and render text on a window or the standard screen.
+ *
+ * @param y The y-coordinate of the text position.
+ * @param x The x-coordinate of the text position.
+ * @param text The string content of the text.
+ * @param win A shared pointer to the window where the text will be rendered. If nullptr, the text will be rendered on the standard screen.
+ */
 class Text {
 private:
     int y, x;
@@ -61,6 +65,16 @@ public:
 };
 typedef std::shared_ptr<Text> TextPtr;
 
+/*
+* @class Window
+* @brief A class to represent and render a subwindow on the screen.
+*
+* @param x The x-coordinate of the window position.
+* @param y The y-coordinate of the window position.
+* @param width The width of the window.
+* @param height The height of the window.
+* @param visible Whether the window is currently visible or not.
+*/
 class Window {
 private:
     std::shared_ptr<WINDOW> win;
@@ -120,6 +134,10 @@ public:
 };
 typedef std::shared_ptr<Window> WindowPtr;
 
+/*
+* @class Screen
+* @brief A class to represent and render a screen with multiple windows and texts.
+*/
 class Screen {
 private:
     std::vector<std::shared_ptr<Text>> texts; // Screen-level texts
@@ -164,6 +182,10 @@ public:
 };
 typedef std::shared_ptr<Screen> ScreenPtr;
 
+/*
+* @class ScreenManager
+* @brief A class to manage the current screen and handle screen changes.
+*/
 class ScreenManager { // Singleton class
 private:
     // std::vector<ScreenPtr> loadedScreens;
