@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <thread>
 #include <ctime>
+#include <atomic>
 
 #include "headers/game.hh"
 #include "headers/render.hh"
@@ -36,8 +37,9 @@ int run(string savefile) {
 
     // Main game loop
     std::cerr << "Starting game thread" << std::endl;
-    std::thread gameThread([&data]() {
-        while (true) {
+    std::atomic_bool exit = false;
+    std::thread gameThread([&data, &exit]() {
+        while (!exit) {
             auto start = time(nullptr);
             gameTick(data);
             auto end = time(nullptr);
@@ -52,6 +54,8 @@ int run(string savefile) {
     manager.run();
 
     // Cleanup
+    exit = true;
+    gameThread.join();
     save(data, savefile);
 
     return 0;
