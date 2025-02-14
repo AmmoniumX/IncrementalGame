@@ -13,9 +13,9 @@ private:
 
     MainScreen(const GameDataPtr data) : Screen(), data(data) {
         mainScreenTitle = putText(0, 0, "Hello, world!");
-        mainScreenScore = putText(1, 0, "Points: " + data->points.to_string());
+        mainScreenScore = putText(1, 0, "Points: " + data->getPoints().to_string());
         mainScreenInfo = putText(2, 0, "Press 'ENTER' to earn points, 'b' to buy, 'q' to quit");
-        buyWindow = createWindow(16, 0, 20, 10, false);
+        buyWindow = createWindow(8, 0, COLS-1, 10, false);
         buyWindow->putText(1, 1, "Buy stuff here");
 
         setOnTick([this](const GameDataPtr data, const char input) { return this->onTick(data, input); });
@@ -26,12 +26,15 @@ public:
     }
 
     bool onTick(const GameDataPtr data, const char input) {
-        mainScreenScore->setText("Points: " + data->points.to_string());
+        mainScreenScore->setText("Points: " + data->getPoints().to_string());
+        BigNum points;
         switch (input) {
             case 'q':
                 return true;
             case '\n':
-                data->points++;
+                points = data->getPoints();
+                points++;
+                data->setPoints(points);
                 return false;
             case 'b':
                 buyWindow->toggle();
@@ -39,8 +42,8 @@ public:
             case -1:
                 return false;
             default:
-                mvprintw(LINES-1, 0, "Unknown command: %c (%d)", input, (int)input);
-                std::cerr << "Unknown command: " << input << " (" << (int)input << ")" << std::endl;
+                mvprintw(LINES-1, 0, "Unknown command: %c (%d)", input, static_cast<int>(input));
+                std::cerr << "Unknown command: " << input << " (" << static_cast<int>(input) << ")" << std::endl;
                 return false;
         }
     }

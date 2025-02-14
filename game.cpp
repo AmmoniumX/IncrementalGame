@@ -3,6 +3,8 @@
 #include <string>
 #include <fstream>
 #include <getopt.h>
+#include <thread>
+#include <ctime>
 
 #include "headers/game.hh"
 #include "headers/render.hh"
@@ -10,6 +12,13 @@
 
 using std::cout, std::endl;
 using nlohmann::json;
+
+static const int GAME_TICK_SPEED = FRAME_RATE;
+void gameTick(GameDataPtr data) {
+    BigNum points = data->getPoints();
+    points++;
+    data->setPoints(points);
+}
 
 int run(string savefile) {
     // Load game data
@@ -26,7 +35,20 @@ int run(string savefile) {
     ScreenManager &manager = ScreenManager::getInstance(data, mainScreen);
 
     // Main game loop
-    std::cerr << "Starting game loop" << std::endl;
+    std::cerr << "Starting game thread" << std::endl;
+    std::thread gameThread([&data]() {
+        while (true) {
+            auto start = time(nullptr);
+            gameTick(data);
+            auto end = time(nullptr);
+            double delta = difftime(end, start);
+            double sleep_time = 1.0 / GAME_TICK_SPEED - delta;
+            if (sleep_time > 0) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleep_time * 1000)));
+            }
+        }
+    });
+    std::cerr << "Starting render loop" << std::endl;
     manager.run();
 
     // Cleanup

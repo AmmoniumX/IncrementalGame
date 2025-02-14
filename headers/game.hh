@@ -2,6 +2,8 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <mutex>
+#include <optional>
 
 #include "BigNum.hh"
 #include "json.hh"
@@ -9,38 +11,52 @@
 using std::string;
 using nlohmann::json;
 
-typedef struct {
+class GameData {
+private:
     BigNum points;
-} GAME_DATA;
+    std::mutex mtx;
+public:
+    GameData() : points(BigNum(0)) {}
+    GameData(BigNum points) : points(points) {}
 
-const GAME_DATA DEFAULT_GAME_DATA = {
-    points: BigNum(0)
+    // Thread-safe getter
+    BigNum getPoints() {
+        std::lock_guard<std::mutex> lock(mtx);
+        return points;
+    }
+
+    // Thread-safe setter
+    void setPoints(const BigNum& newPoints) {
+        std::lock_guard<std::mutex> lock(mtx);
+        points = newPoints;
+    }
 };
-typedef std::shared_ptr<GAME_DATA> GameDataPtr;
+
+typedef std::shared_ptr<GameData> GameDataPtr;
 
 // Convert game data to json
 json to_json(const GameDataPtr data) {
     return json{
-        {"points", data->points.to_string()}
+        {"points", data->getPoints().to_string()}
     };
 }
 
 // Convert json to game data
-bool from_json(const json& j, GAME_DATA& data) {
+std::shared_ptr<GameData> from_json(const json& j) {
+    std::shared_ptr<GameData> data(new GameData());
     try {
         string pts_str;
         j.at("points").get_to(pts_str);
-        data.points = BigNum(pts_str);
-        return true;
+        data->setPoints(BigNum(pts_str));
+        return data;
     } catch(const std::exception& e) {
         std::cerr << e.what() << std::endl;
-        return false;
+        return nullptr;
     }
-    
 }
 
 // Save game data
-void save(GameDataPtr data, string filename) {
+void save(GameDataPtr data, const string& filename) {
     std::cout << "Saving game data to " << filename << "..." << std::endl;
     
     // Convert to json
@@ -57,16 +73,14 @@ void save(GameDataPtr data, string filename) {
 }
 
 // Load game data
-GameDataPtr load(string filename) {
+GameDataPtr load(const string& filename) {
     std::cout << "Loading game data from " << filename << "..." << std::endl;
-    GAME_DATA data;
 
     // Load json from file
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cout << "File not found, creating new game data..." << std::endl;
-        data = DEFAULT_GAME_DATA;
-        return std::make_shared<GAME_DATA>(data);
+        return std::shared_ptr<GameData>(new GameData());
     }
 
     json j;
@@ -76,13 +90,12 @@ GameDataPtr load(string filename) {
         std::cout << "Error: Could not parse json! Is data corrupted?" << std::endl;
         throw std::runtime_error("Could not parse json");
     }
-
-    bool success = from_json(j, data);
-    if (!success) {
+    auto data = from_json(j);
+    if (!data) {
         std::cout << "Error: Could not load game data! Is data corrupted?" << std::endl;
         throw std::runtime_error("Could not load game data");
     }
 
     std::cout << "Game data loaded!" << std::endl;
-    return std::make_shared<GAME_DATA>(data);
+    return data;
 }
