@@ -13,6 +13,8 @@ LDFLAGS = -lncurses
 TARGET = bin/game
 OBJS = game.o
 SRCS = game.cpp
+HEADERS = $(wildcard headers/*.hh)
+SCREENS = $(wildcard screens/*.hh)
 
 # Build Rules
 all: $(TARGET)
@@ -20,7 +22,7 @@ all: $(TARGET)
 bin/game: game.o
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-game.o: game.cpp headers/game.hh headers/json.hh headers/render.hh headers/BigNum.hh
+game.o: game.cpp $(HEADERS) $(SCREENS)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 # Phony Targets

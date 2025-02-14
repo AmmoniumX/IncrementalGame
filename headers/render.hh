@@ -34,10 +34,10 @@ class Text {
 private:
     int y, x;
     std::string text;
-
+    std::shared_ptr<WINDOW> win;
 public:
-    Text(int y, int x, const std::string& text) : 
-        y(y), x(x), text(text) {}
+    Text(int y, int x, const std::string& text, std::shared_ptr<WINDOW> win=nullptr) : 
+        y(y), x(x), text(text), win(win) {}
 
     std::string getText() const { return text; }
     int getX() const { return x; }
@@ -48,7 +48,15 @@ public:
     void setY(int py) { y = py; }
 
     void render() {
-        mvprintw(y, x, "%s", text.c_str());
+        if (!win) {
+            mvprintw(y, x, "%s", text.c_str());
+        } else {
+            mvwprintw(win.get(), y, x, "%s", text.c_str());
+        }
+    }
+
+    void clear() {
+        mvprintw(y, x, "%*s", static_cast<int>(text.size()), " ");
     }
 };
 typedef std::shared_ptr<Text> TextPtr;
@@ -57,21 +65,55 @@ class Window {
 private:
     std::shared_ptr<WINDOW> win;
     std::vector<std::shared_ptr<Text>> texts; // Window-level texts
+    int x, y, width, height;
+    bool visible;
 public:
-    Window(int x, int y, int width, int height) {
+    Window(int x, int y, int width, int height, bool visible) 
+    : x(x), y(y), width(width), height(height), visible(visible) {
         win = std::shared_ptr<WINDOW>(newwin(height, width, y, x), [](WINDOW* w) { delwin(w); });
-        box(win.get(), 0, 0);
     }
 
+    void clearWindow() {
+        std::cerr << "Clearing window" << std::endl;
+        werase(win.get()); // Clear the window
+        wrefresh(win.get()); // Refresh to apply changes
+
+        // Overwrite the text with spaces
+        for (const auto& text : texts) {
+            text->clear();
+        }
+    }
+    void enable() { 
+        visible = true; 
+    }
+    void disable() { 
+        clearWindow();
+        visible = false; 
+    }
+    void toggle() { visible ? disable() : enable(); }
+
     void render() {
+        if (!visible) return;
+
+        if (!win) {
+            std::cerr << "Window is not initialized!" << std::endl;
+            return;
+        }
+
+        // Draw the border
+        box(win.get(), 0, 0);
+
+        // Render the texts
         for (const auto& text : texts) {
             text->render();
         }
+
+        // Refresh the window
         wrefresh(win.get());
     }
 
-    std::shared_ptr<Text> putText(int y, int x, const std::string& text) {
-        auto textObj = std::make_shared<Text>(y, x, text);
+    std::shared_ptr<Text> putText(int textY, int textX, const std::string& text) {
+        auto textObj = std::make_shared<Text>(textY, textX, text, win);
         texts.push_back(textObj);
         return textObj;
     }
@@ -82,10 +124,10 @@ class Screen {
 private:
     std::vector<std::shared_ptr<Text>> texts; // Screen-level texts
     std::vector<std::shared_ptr<Window>> windows; // Screen-level windows
-    std::function<bool(GAME_DATA*, const char)> onTick = nullptr;
+    std::function<bool(const GameDataPtr, const char)> onTick = nullptr;
 
 public:
-    void setOnTick(const std::function<bool(GAME_DATA*, const char)> onTick) {
+    void setOnTick(const std::function<bool(const GameDataPtr, const char)> onTick) {
         this->onTick = onTick;
     }
 
@@ -95,13 +137,14 @@ public:
         return textObj;
     }
 
-    std::shared_ptr<Window> createWindow(int y, int x, int width, int height) {
-        auto window = std::make_shared<Window>(x, y, width, height);
+    std::shared_ptr<Window> createWindow(int y, int x, int width, int height, bool visible=true) {
+        auto window = std::make_shared<Window>(x, y, width, height, visible);
         windows.push_back(window);
         return window;
     }
 
     void render() {
+        // clear();
         for (const auto& text : texts) {
             text->render();
         }
@@ -111,7 +154,7 @@ public:
         refresh();
     }
 
-    bool tick(GAME_DATA *data, char input) {
+    bool tick(GameDataPtr data, char input) {
         // Return true if exit is requested
         if (onTick) {
             return onTick(data, input);
@@ -124,14 +167,14 @@ typedef std::shared_ptr<Screen> ScreenPtr;
 class ScreenManager { // Singleton class
 private:
     // std::vector<ScreenPtr> loadedScreens;
-    GAME_DATA *data = nullptr;
+    GameDataPtr data = nullptr;
     ScreenPtr currentScreen = nullptr;
     std::shared_ptr<Screen> nextScreen = nullptr;
     bool screenChange = false;
     bool exitRequested = false;
 
     // Private constructor for singleton
-    ScreenManager(GAME_DATA *data, const ScreenPtr screen) : 
+    ScreenManager(const GameDataPtr data, const ScreenPtr screen) : 
         data(data), currentScreen(screen) {};
     
     // Deleted copy constructor and assignment operator
@@ -140,7 +183,7 @@ private:
 
 public:
     // Static method to get the singleton instance
-    static ScreenManager& getInstance(GAME_DATA *data, const ScreenPtr screen) {
+    static ScreenManager& getInstance(const GameDataPtr data, const ScreenPtr screen) {
         static ScreenManager instance(data, screen);
         return instance;
     }

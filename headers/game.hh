@@ -1,11 +1,11 @@
 #pragma once
-#include <boost/multiprecision/gmp.hpp>
 #include <iostream>
 #include <fstream>
 #include <string>
 
-#include "json.hh"
 #include "BigNum.hh"
+#include "json.hh"
+
 using std::string;
 using nlohmann::json;
 
@@ -13,14 +13,15 @@ typedef struct {
     BigNum points;
 } GAME_DATA;
 
-GAME_DATA DEFAULT_GAME_DATA = {
+const GAME_DATA DEFAULT_GAME_DATA = {
     points: BigNum(0)
 };
+typedef std::shared_ptr<GAME_DATA> GameDataPtr;
 
 // Convert game data to json
-json to_json(const GAME_DATA& data) {
+json to_json(const GameDataPtr data) {
     return json{
-        {"points", data.points.to_string()}
+        {"points", data->points.to_string()}
     };
 }
 
@@ -39,7 +40,7 @@ bool from_json(const json& j, GAME_DATA& data) {
 }
 
 // Save game data
-void save(GAME_DATA& data, string filename) {
+void save(GameDataPtr data, string filename) {
     std::cout << "Saving game data to " << filename << "..." << std::endl;
     
     // Convert to json
@@ -56,14 +57,16 @@ void save(GAME_DATA& data, string filename) {
 }
 
 // Load game data
-GAME_DATA load(string filename) {
+GameDataPtr load(string filename) {
     std::cout << "Loading game data from " << filename << "..." << std::endl;
+    GAME_DATA data;
 
     // Load json from file
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cout << "File not found, creating new game data..." << std::endl;
-        return DEFAULT_GAME_DATA;
+        data = DEFAULT_GAME_DATA;
+        return std::make_shared<GAME_DATA>(data);
     }
 
     json j;
@@ -74,7 +77,6 @@ GAME_DATA load(string filename) {
         throw std::runtime_error("Could not parse json");
     }
 
-    GAME_DATA data;
     bool success = from_json(j, data);
     if (!success) {
         std::cout << "Error: Could not load game data! Is data corrupted?" << std::endl;
@@ -82,5 +84,5 @@ GAME_DATA load(string filename) {
     }
 
     std::cout << "Game data loaded!" << std::endl;
-    return data;
+    return std::make_shared<GAME_DATA>(data);
 }
