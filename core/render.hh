@@ -69,7 +69,7 @@ public:
             doClear(needsClear);
             needsClear = 0;
         }
-        if (text.empty()) return;
+        if (text.empty()) { return; }
 
         if (!win) {
             mvprintw(y, x, "%s", text.c_str());
@@ -80,6 +80,10 @@ public:
 
     void clear() {
         needsClear = static_cast<int>(text.size());
+    }
+
+    void reset() {
+        clear();
         text = "";
     }
 
@@ -110,7 +114,6 @@ public:
 
     bool isVisible() const { return visible; }
     void clearWindow() {
-        std::cerr << "Clearing window" << std::endl;
         werase(win.get()); // Clear the window
         wrefresh(win.get()); // Refresh to apply changes
 

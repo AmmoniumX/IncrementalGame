@@ -91,7 +91,7 @@ public:
         // Update screen elements
         if (notifyTime > 0) { notifyTime--; }
         if (notifyTime == 0) {
-            notifyText->clear();
+            notifyText->reset();
         }
         mainScreenScore->setText("Points: " + points.to_string(), true);
         mainScreenResources->setText("Clickers: " + clickers.to_string() + " (Lvl " + clicker_lvl.to_string() + ")");

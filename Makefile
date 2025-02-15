@@ -30,7 +30,7 @@ all: $(TARGET)
 bin/game: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-game.o: game.cpp $(CORE_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
+core/game.o: core/game.cpp $(CORE_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 # Phony Targets
