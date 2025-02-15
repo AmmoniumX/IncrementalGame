@@ -14,16 +14,40 @@
 using std::cout, std::endl;
 using nlohmann::json;
 
-static const int GAME_TICK_SPEED = FRAME_RATE;
-void gameTick(GameDataPtr data) {
-    BigNum points = data->getPoints();
-    points++;
-    data->setPoints(points);
+namespace {
+    // Private game variables
+    uint tick = 0;
+    std::atomic_bool do_exit = false;
+    GameDataPtr data = nullptr;
 }
+
+void gameTick() {
+    if (!data) { std::cerr << "GameData is null" << std::endl; return; }
+    // Process clickers
+    int clicker_freq = std::max(static_cast<int>(GAME_TICK_SPEED - 3*data->getResource(Resources::CLICKER_LVL).to_number().value_or(10)), 1);
+    BigNum clickers = data->getResource(Resources::CLIKER);
+    if (tick % clicker_freq == 0) { data->addPoints(clickers); }
+    tick++;
+}
+
+void gameWorker() {
+    while (!do_exit) {
+        auto start = time(nullptr);
+        gameTick();
+        auto end = time(nullptr);
+        double delta = difftime(end, start);
+        double sleep_time = 1.0 / GAME_TICK_SPEED - delta;
+        if (sleep_time > 0) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleep_time * 1000)));
+        }
+    }
+}
+
+
 
 int run(string savefile) {
     // Load game data
-    GameDataPtr data = load(savefile);
+    data = load(savefile);
 
     // Initialize ncurses
     std::cerr << "Setting up ncurses" << std::endl;
@@ -37,24 +61,15 @@ int run(string savefile) {
 
     // Main game loop
     std::cerr << "Starting game thread" << std::endl;
-    std::atomic_bool exit = false;
-    std::thread gameThread([&data, &exit]() {
-        while (!exit) {
-            auto start = time(nullptr);
-            gameTick(data);
-            auto end = time(nullptr);
-            double delta = difftime(end, start);
-            double sleep_time = 1.0 / GAME_TICK_SPEED - delta;
-            if (sleep_time > 0) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleep_time * 1000)));
-            }
-        }
+    do_exit = false;
+    std::thread gameThread([]() {
+        gameWorker(); return;
     });
     std::cerr << "Starting render loop" << std::endl;
     manager.run();
 
     // Cleanup
-    exit = true;
+    do_exit = true;
     gameThread.join();
     save(data, savefile);
 

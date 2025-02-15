@@ -10,25 +10,90 @@
 
 using std::string;
 using nlohmann::json;
+using N = BigNum;
 
+static constexpr int GAME_TICK_SPEED = 30;
+
+enum class Resources {
+    CLIKER = 0,
+    CLICKER_LVL
+};
+
+static const std::unordered_map<Resources, std::string> ResourceIds = {
+    {Resources::CLIKER, "clicker"},
+    {Resources::CLICKER_LVL, "clicker_lvl"}
+};
+
+static const std::string resourceId(const Resources type) {
+    return ResourceIds.at(type);
+};
+
+// Thread-safe game data class
 class GameData {
 private:
     BigNum points;
-    std::mutex mtx;
+    std::mutex mtx_points;
+    std::unordered_map<std::string, BigNum> resources;
+    std::mutex mtx_resources;
 public:
     GameData() : points(BigNum(0)) {}
     GameData(BigNum points) : points(points) {}
 
-    // Thread-safe getter
     BigNum getPoints() {
-        std::lock_guard<std::mutex> lock(mtx);
+        std::lock_guard<std::mutex> lock(mtx_points);
         return points;
     }
 
-    // Thread-safe setter
     void setPoints(const BigNum& newPoints) {
-        std::lock_guard<std::mutex> lock(mtx);
+        std::lock_guard<std::mutex> lock(mtx_points);
         points = newPoints;
+    }
+
+    void addPoints(const BigNum& add) {
+        std::lock_guard<std::mutex> lock(mtx_points);
+        points += add;
+    }
+
+    void subPoints(const BigNum& sub) {
+        std::lock_guard<std::mutex> lock(mtx_points);
+        points -= sub;
+    }
+
+    BigNum getResource(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        if (!resources.contains(id)) {
+            return BigNum(0);
+        }
+        return resources[id];
+    }
+
+    BigNum getResource(const Resources& resource) {
+        std::string id = resourceId(resource);
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        if (!resources.contains(id)) {
+            return BigNum(0);
+        }
+        return resources[id];
+    }
+
+    void setResource(const std::string id, const BigNum& value) {
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        resources[id] = value;
+    }
+
+    void setResource(const Resources& resource, const BigNum& value) {
+        std::string id = resourceId(resource);
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        resources[id] = value;
+    }
+
+    void addResource(const Resources& resource, const BigNum& add) {
+        std::string id = resourceId(resource);
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        if (!resources.contains(id)) {
+            resources[id] = BigNum(0);
+        }
+        resources[id] += add;
     }
 };
 
@@ -36,8 +101,16 @@ typedef std::shared_ptr<GameData> GameDataPtr;
 
 // Convert game data to json
 json to_json(const GameDataPtr data) {
+    json resources_json = json::object({});
+    for (const auto &[resource, id] : ResourceIds) {
+        BigNum val = data->getResource(id);
+        if (val != 0) {
+            resources_json[id] = val.serialize();
+        }
+    }
     return json{
-        {"points", data->getPoints().to_string()}
+        {"points", data->getPoints().serialize()},
+        {"resources", resources_json}
     };
 }
 
@@ -45,9 +118,22 @@ json to_json(const GameDataPtr data) {
 std::shared_ptr<GameData> from_json(const json& j) {
     std::shared_ptr<GameData> data(new GameData());
     try {
+        // Load points
         string pts_str;
         j.at("points").get_to(pts_str);
         data->setPoints(BigNum(pts_str));
+
+        // Load resources
+        for (const auto& [id, val] : j.at("resources").items()) {
+            string val_str;
+            if (!val.is_string()) {
+                throw std::runtime_error("Resource value is not a string");
+            }
+            val.get_to(val_str);
+
+            data->setResource(id, BigNum(val_str));
+        }
+
         return data;
     } catch(const std::exception& e) {
         std::cerr << e.what() << std::endl;

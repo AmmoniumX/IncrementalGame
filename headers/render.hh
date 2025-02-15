@@ -9,10 +9,8 @@
 #include <string>
 #include <ctime>
 
-#include "game.hh"
-
 // Constants
-inline const uint FRAME_RATE = 15;
+inline constexpr uint FRAME_RATE = 30;
 
 // Ncurses setup
 void setupNcurses() {
@@ -39,6 +37,18 @@ private:
     int y, x;
     std::string text;
     std::shared_ptr<WINDOW> win;
+    int needsClear = 0;
+    void doClear(int len) {
+        if (!win) {
+            mvprintw(y, x, "%*s", len, " ");
+        } else {
+            mvwprintw(win.get(), y, x, "%*s", len, " ");
+        }
+    }
+    
+    void doClear() {
+        doClear(static_cast<int>(text.size()));
+    }
 public:
     Text(int y, int x, const std::string& text, std::shared_ptr<WINDOW> win=nullptr) : 
         y(y), x(x), text(text), win(win) {}
@@ -47,11 +57,20 @@ public:
     int getX() const { return x; }
     int getY() const { return y; }
 
-    void setText(const std::string& newText) { text = newText; }
+    void setText(const std::string& newText, bool clear=false) { 
+        if (clear) { needsClear = static_cast<int>(text.size()); }
+        text = newText;
+    }
     void setX(int px) { x = px; }
     void setY(int py) { y = py; }
 
     void render() {
+        if (needsClear > 0) {
+            doClear(needsClear);
+            needsClear = 0;
+        }
+        if (text.empty()) return;
+
         if (!win) {
             mvprintw(y, x, "%s", text.c_str());
         } else {
@@ -60,8 +79,10 @@ public:
     }
 
     void clear() {
-        mvprintw(y, x, "%*s", static_cast<int>(text.size()), " ");
+        needsClear = static_cast<int>(text.size());
+        text = "";
     }
+
 };
 typedef std::shared_ptr<Text> TextPtr;
 
@@ -87,6 +108,7 @@ public:
         win = std::shared_ptr<WINDOW>(newwin(height, width, y, x), [](WINDOW* w) { delwin(w); });
     }
 
+    bool isVisible() const { return visible; }
     void clearWindow() {
         std::cerr << "Clearing window" << std::endl;
         werase(win.get()); // Clear the window
