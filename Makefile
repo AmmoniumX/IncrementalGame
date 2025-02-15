@@ -11,18 +11,26 @@ LDFLAGS = -lncurses
 
 # Target and Source Files
 TARGET = bin/game
-OBJS = game.o
-SRCS = game.cpp
-HEADERS = $(wildcard headers/*.hh)
-SCREENS = $(wildcard screens/*.hh)
+
+CORE_HDRS = $(wildcard core/*.hh)
+SCREENS_HDRS = $(wildcard screens/*.hh)
+RESOURCES_HDRS = $(wildcard resources/*.hh)
+
+CORE_SRCS = $(wildcard core/*.cpp)
+SCREENS_SRCS = $(wildcard screens/*.cpp)
+RESOURCES_SRCS = $(wildcard resources/*.cpp)
+
+SRCS = $(CORE_SRCS) $(SCREENS_SRCS) $(RESOURCES_SRCS)
+OBJS = $(SRCS:.cpp=.o)
+
 
 # Build Rules
 all: $(TARGET)
 
-bin/game: game.o
+bin/game: $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-game.o: game.cpp $(HEADERS) $(SCREENS)
+game.o: game.cpp $(CORE_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 # Phony Targets

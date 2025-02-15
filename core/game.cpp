@@ -7,12 +7,16 @@
 #include <ctime>
 #include <atomic>
 
-#include "headers/game.hh"
-#include "headers/render.hh"
-#include "screens/MainScreen.hh"
+#include "game.hh"
+#include "render.hh"
+#include "../screens/MainScreen.hh"
+#include "../resources/Clicker.hh"
 
 using std::cout, std::endl;
 using nlohmann::json;
+
+// Define extern variables
+ResourceTypes resourceTypes;
 
 namespace {
     // Private game variables
@@ -23,14 +27,12 @@ namespace {
 
 void gameTick() {
     if (!data) { std::cerr << "GameData is null" << std::endl; return; }
-    // Process clickers
-    int clicker_freq = std::max(static_cast<int>(GAME_TICK_SPEED - 3*data->getResource(Resources::CLICKER_LVL).to_number().value_or(10)), 1);
-    BigNum clickers = data->getResource(Resources::CLIKER);
-    if (tick % clicker_freq == 0) { data->addPoints(clickers); }
+    Clicker::onTick(data, tick);
     tick++;
 }
 
 void gameWorker() {
+    // Main game loop
     while (!do_exit) {
         auto start = time(nullptr);
         gameTick();
@@ -46,6 +48,10 @@ void gameWorker() {
 
 
 int run(string savefile) {
+
+    // Initialize resoruces
+    Clicker::create();
+
     // Load game data
     data = load(savefile);
 

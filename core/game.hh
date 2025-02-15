@@ -5,6 +5,9 @@
 #include <mutex>
 #include <optional>
 
+#include <unordered_map>
+#include <unordered_set>
+
 #include "BigNum.hh"
 #include "json.hh"
 
@@ -14,19 +17,25 @@ using N = BigNum;
 
 static constexpr int GAME_TICK_SPEED = 30;
 
-enum class Resources {
-    CLIKER = 0,
-    CLICKER_LVL
+class ResourceTypes {
+private:
+    std::unordered_set<std::string> ResourceIds;
+    std::mutex mtx;
+public:
+    void registerResource(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx);
+        ResourceIds.insert(id);
+    }
+    std::unordered_set<std::string> getResourceIds() {
+        std::lock_guard<std::mutex> lock(mtx);
+        return ResourceIds;
+    }
+    bool contains(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx);
+        return ResourceIds.contains(id);
+    }
 };
-
-static const std::unordered_map<Resources, std::string> ResourceIds = {
-    {Resources::CLIKER, "clicker"},
-    {Resources::CLICKER_LVL, "clicker_lvl"}
-};
-
-static const std::string resourceId(const Resources type) {
-    return ResourceIds.at(type);
-};
+extern ResourceTypes resourceTypes;
 
 // Thread-safe game data class
 class GameData {
@@ -67,28 +76,12 @@ public:
         return resources[id];
     }
 
-    BigNum getResource(const Resources& resource) {
-        std::string id = resourceId(resource);
-        std::lock_guard<std::mutex> lock(mtx_resources);
-        if (!resources.contains(id)) {
-            return BigNum(0);
-        }
-        return resources[id];
-    }
-
     void setResource(const std::string id, const BigNum& value) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         resources[id] = value;
     }
 
-    void setResource(const Resources& resource, const BigNum& value) {
-        std::string id = resourceId(resource);
-        std::lock_guard<std::mutex> lock(mtx_resources);
-        resources[id] = value;
-    }
-
-    void addResource(const Resources& resource, const BigNum& add) {
-        std::string id = resourceId(resource);
+    void addResource(const std::string& id, const BigNum& add) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         if (!resources.contains(id)) {
             resources[id] = BigNum(0);
@@ -102,7 +95,7 @@ typedef std::shared_ptr<GameData> GameDataPtr;
 // Convert game data to json
 json to_json(const GameDataPtr data) {
     json resources_json = json::object({});
-    for (const auto &[resource, id] : ResourceIds) {
+    for (const auto &id : resourceTypes.getResourceIds()) {
         BigNum val = data->getResource(id);
         if (val != 0) {
             resources_json[id] = val.serialize();
@@ -126,11 +119,10 @@ std::shared_ptr<GameData> from_json(const json& j) {
         // Load resources
         for (const auto& [id, val] : j.at("resources").items()) {
             string val_str;
-            if (!val.is_string()) {
-                throw std::runtime_error("Resource value is not a string");
+            if (!val.is_string() || !resourceTypes.contains(id)) {
+                throw std::runtime_error("Resource id is not a valid type: '" + id + "'");
             }
             val.get_to(val_str);
-
             data->setResource(id, BigNum(val_str));
         }
 

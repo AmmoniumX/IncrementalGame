@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../headers/game.hh"
-#include "../headers/render.hh"
+#include "../core/game.hh"
+#include "../core/render.hh"
+#include "../resources/Clicker.hh"
 #include <sstream>
 #include <cmath>
 
@@ -32,14 +33,14 @@ private:
 
     void refreshValues() {
         points = data->getPoints();
-        clickers = data->getResource(Resources::CLIKER);
+        clickers = data->getResource(Clicker::clicker);
         
         // Only update cps_str if clicker_lvl has changed
-        BigNum clicker_lvl_new = data->getResource(Resources::CLICKER_LVL);
+        BigNum clicker_lvl_new = data->getResource(Clicker::clicker_lvl);
         if (clicker_lvl != clicker_lvl_new) {
             clicker_lvl = clicker_lvl_new;
             int clicker_freq = std::max(static_cast<int>(
-                GAME_TICK_SPEED - 3*data->getResource(Resources::CLICKER_LVL).to_number().value_or(0))
+                GAME_TICK_SPEED - 3*clicker_lvl.to_number().value_or(0))
                 , 1);
             double clicks_per_sec = (1.0 / GAME_TICK_SPEED) * static_cast<double>(clicker_freq);
             std::stringstream cps_ss;
@@ -52,10 +53,10 @@ private:
         
         // Get initial values
         points = data->getPoints();
-        clickers = data->getResource(Resources::CLIKER);
-        BigNum clicker_lvl = data->getResource(Resources::CLICKER_LVL);
+        clickers = data->getResource(Clicker::clicker);
+        BigNum clicker_lvl = data->getResource(Clicker::clicker_lvl);
         int clicker_freq = std::max(static_cast<int>(
-            GAME_TICK_SPEED - 3*data->getResource(Resources::CLICKER_LVL).to_number().value_or(0))
+            GAME_TICK_SPEED - 3*clicker_lvl.to_number().value_or(0))
             , 1);
         double clicks_per_sec = GAME_TICK_SPEED / static_cast<double>(clicker_freq);
         std::stringstream cps_ss;
@@ -80,6 +81,8 @@ public:
     static ScreenPtr create(const GameDataPtr data) {
         return std::shared_ptr<MainScreen>(new MainScreen(data));
     }
+
+    MainScreen() = delete;
 
     bool onTick(const GameDataPtr data, const char input) {
         // Update local variables
@@ -107,7 +110,7 @@ public:
             case '1':
                 if (!buyWindow->isVisible()) return false;
                 if (points >= 10) {
-                    data->addResource(Resources::CLIKER, N(1));
+                    data->addResource(Clicker::clicker, N(1));
                     data->subPoints(N(10));
                 } else {
                     notify("Not enough points to buy clicker! (Need 10)");
@@ -117,7 +120,7 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 if (points < 100) { notify("Not enough points to buy clicker level! (Need 100)"); return false; }
                 if (clicker_lvl >= 9) { notify("Max level reached!"); return false; }
-                data->addResource(Resources::CLICKER_LVL, N(1));
+                data->addResource(Clicker::clicker_lvl, N(1));
                 data->subPoints(N(100));
                 return false;
             case -1:
