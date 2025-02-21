@@ -25,8 +25,8 @@ public:
         (void) getInstance();
     }
 
-    inline static int getLevel(const GameDataPtr data) {
-        return data->getResource(clicker_lvl_bonus).to_number().value_or(0) + 1;
+    inline static BigNum getLevel(const GameDataPtr data) {
+        return data->getResource(clicker_lvl_bonus) + 1;
     }
 
     inline static double getSpC(const GameDataPtr data) {

@@ -34,7 +34,7 @@ private:
     void refreshValues() {
         points = data->getPoints();
         clickers = data->getResource(Clicker::clicker);
-        clicker_lvl = Clicker::getLevel(data);
+        clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
         clicker_spc = Clicker::getSpC(data);
     }
 
@@ -43,7 +43,7 @@ private:
         // Get initial values
         points = data->getPoints();
         clickers = data->getResource(Clicker::clicker);
-        clicker_lvl = Clicker::getLevel(data);
+        clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
         clicker_spc = Clicker::getSpC(data);
 
         // Create screen elements
