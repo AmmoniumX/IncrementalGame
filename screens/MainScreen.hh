@@ -23,8 +23,8 @@ private:
     // Local variable copies
     BigNum points;
     BigNum clickers;
-    BigNum clicker_lvl;
-    std::string cps_str;
+    int clicker_lvl;
+    double clicker_spc;
 
     void notify(const std::string& text) {
         notifyText->setText(text, true);
@@ -34,19 +34,8 @@ private:
     void refreshValues() {
         points = data->getPoints();
         clickers = data->getResource(Clicker::clicker);
-        
-        // Only update cps_str if clicker_lvl has changed
-        BigNum clicker_lvl_new = data->getResource(Clicker::clicker_lvl);
-        if (clicker_lvl != clicker_lvl_new) {
-            clicker_lvl = clicker_lvl_new;
-            int clicker_freq = std::max(static_cast<int>(
-                GAME_TICK_SPEED - 3*clicker_lvl.to_number().value_or(0))
-                , 1);
-            double clicks_per_sec = (1.0 / GAME_TICK_SPEED) * static_cast<double>(clicker_freq);
-            std::stringstream cps_ss;
-            cps_ss << std::fixed << std::setprecision(2) << clicks_per_sec;
-            cps_str = cps_ss.str();
-        }
+        clicker_lvl = Clicker::getLevel(data);
+        clicker_spc = Clicker::getSpC(data);
     }
 
     MainScreen(const GameDataPtr data) : Screen(), data(data) {
@@ -54,24 +43,19 @@ private:
         // Get initial values
         points = data->getPoints();
         clickers = data->getResource(Clicker::clicker);
-        BigNum clicker_lvl = data->getResource(Clicker::clicker_lvl);
-        int clicker_freq = std::max(static_cast<int>(
-            GAME_TICK_SPEED - 3*clicker_lvl.to_number().value_or(0))
-            , 1);
-        double clicks_per_sec = GAME_TICK_SPEED / static_cast<double>(clicker_freq);
-        std::stringstream cps_ss;
-        cps_ss << std::fixed << std::setprecision(2) << clicks_per_sec;
-        cps_str = cps_ss.str();
+        clicker_lvl = Clicker::getLevel(data);
+        clicker_spc = Clicker::getSpC(data);
 
         // Create screen elements
         mainScreenTitle = putText(0, 0, "Hello, world!");
         mainScreenScore = putText(1, 0, "Points: " + points.to_string());
-        mainScreenResources = putText(2, 0, "Clickers: " + clickers.to_string() + " (Lvl " + clicker_lvl.to_string() + ")");
+        mainScreenResources = putText(2, 0, "Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
         mainScreenInfo = putText(3, 0, "[ENTER] Click | [B] Buy | [Q] Quit");
         buyWindow = createWindow(8, 0, COLS-1, 10, false);
         buyWindow->putText(0, 2, "Buy Menu:");
-        buyWindowContent.push_back(buyWindow->putText(1, 1, "[1] Clicker: Clicks once every "+cps_str+"s. 10 points"));
-        buyWindowContent.push_back(buyWindow->putText(2, 1, "[2] LVL Clicker: Speeds up clicker speed by 0.1s. Max 9 levels. 100 points"));
+        std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
+        buyWindowContent.push_back(buyWindow->putText(1, 1, "[1] Clicker: Clicks once every "+spc_ss.str()+"s. 10 points"));
+        buyWindowContent.push_back(buyWindow->putText(2, 1, "[2] LVL Clicker: Speeds up clicker speed by 0.1s. Max 10 levels. 100 points"));
         buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close"));
         notifyText = putText(LINES-1, 0, "");
 
@@ -94,8 +78,9 @@ public:
             notifyText->reset();
         }
         mainScreenScore->setText("Points: " + points.to_string(), true);
-        mainScreenResources->setText("Clickers: " + clickers.to_string() + " (Lvl " + clicker_lvl.to_string() + ")");
-        buyWindowContent[0]->setText("[1] Clicker: Clicks once every "+cps_str+"s. 10 points");
+        mainScreenResources->setText("Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
+        std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
+        buyWindowContent[0]->setText("[1] Clicker: Clicks once every "+spc_ss.str()+"s. 10 points");
 
         // Handle input
         switch (input) {
@@ -119,8 +104,8 @@ public:
             case '2':
                 if (!buyWindow->isVisible()) return false;
                 if (points < 100) { notify("Not enough points to buy clicker level! (Need 100)"); return false; }
-                if (clicker_lvl >= 9) { notify("Max level reached!"); return false; }
-                data->addResource(Clicker::clicker_lvl, N(1));
+                if (clicker_lvl >= 10) { notify("Max level reached!"); return false; }
+                data->addResource(Clicker::clicker_lvl_bonus, N(1));
                 data->subPoints(N(100));
                 return false;
             case -1:
