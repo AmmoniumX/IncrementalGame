@@ -11,6 +11,7 @@
 #include "render.hh"
 #include "../screens/MainScreen.hh"
 #include "../resources/Clicker.hh"
+#include "../resources/Factory.hh"
 
 using std::cout, std::endl;
 using nlohmann::json;
@@ -28,6 +29,7 @@ namespace {
 void gameTick() {
     if (!data) { std::cerr << "GameData is null" << std::endl; return; }
     Clicker::onTick(data, tick);
+    Factory::onTick(data, tick);
     tick++;
 }
 
@@ -50,9 +52,12 @@ void gameWorker() {
 int run(string savefile) {
 
     // Initialize resoruces
+    std::cerr << "Creating resources" << std::endl;
     Clicker::create();
+    Factory::create();
 
     // Load game data
+    std::cerr << "Loading game data" << std::endl;
     data = load(savefile);
 
     // Initialize ncurses

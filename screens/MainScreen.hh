@@ -3,6 +3,7 @@
 #include "../core/game.hh"
 #include "../core/render.hh"
 #include "../resources/Clicker.hh"
+#include "../resources/Factory.hh"
 #include <sstream>
 #include <cmath>
 
@@ -14,7 +15,8 @@ private:
     double notifyTime = 0;
     TextPtr mainScreenTitle;
     TextPtr mainScreenScore;
-    TextPtr mainScreenResources;
+    TextPtr mainScreenClickers;
+    TextPtr mainScreenFactories;
     TextPtr mainScreenInfo;
     WindowPtr buyWindow;
     TextPtr buyWindowTitle;
@@ -25,6 +27,9 @@ private:
     BigNum clickers;
     int clicker_lvl;
     double clicker_spc;
+    BigNum factories;
+    BigNum factory_cps;
+    BigNum factory_cost;
 
     void notify(const std::string& text) {
         notifyText->setText(text, true);
@@ -36,26 +41,33 @@ private:
         clickers = data->getResource(Clicker::clicker);
         clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
         clicker_spc = Clicker::getSpC(data);
+
+        factories = data->getResource(Factory::factory);
+        factory_cps = Factory::getCpS(data);
+        factory_cost = Factory::getCost(data);
     }
 
     MainScreen(const GameDataPtr data) : Screen(), data(data) {
         
         // Get initial values
-        points = data->getPoints();
-        clickers = data->getResource(Clicker::clicker);
-        clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
-        clicker_spc = Clicker::getSpC(data);
+        refreshValues();
+        // points = data->getPoints();
+        // clickers = data->getResource(Clicker::clicker);
+        // clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
+        // clicker_spc = Clicker::getSpC(data);
 
         // Create screen elements
         mainScreenTitle = putText(0, 0, "Hello, world!");
         mainScreenScore = putText(1, 0, "Points: " + points.to_string());
-        mainScreenResources = putText(2, 0, "Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
-        mainScreenInfo = putText(3, 0, "[ENTER] Click | [B] Buy | [Q] Quit");
+        mainScreenClickers = putText(2, 0, "Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
+        mainScreenFactories = putText(3, 0, "Factories: " + factories.to_string());
+        mainScreenInfo = putText(4, 0, "[ENTER] Click | [B] Buy | [Q] Quit");
         buyWindow = createWindow(8, 0, COLS-1, 10, false);
         buyWindow->putText(0, 2, "Buy Menu:");
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
         buyWindowContent.push_back(buyWindow->putText(1, 1, "[1] Clicker: Clicks once every "+spc_ss.str()+"s. 10 points"));
         buyWindowContent.push_back(buyWindow->putText(2, 1, "[2] LVL Clicker: Speeds up clicker speed by 0.1s. Max 10 levels. 100 points"));
+        buyWindowContent.push_back(buyWindow->putText(3, 1, "[3] Factory: Produces 0 clickers every second. 1000 points"));
         buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close"));
         notifyText = putText(LINES-1, 0, "");
 
@@ -78,9 +90,11 @@ public:
             notifyText->reset();
         }
         mainScreenScore->setText("Points: " + points.to_string(), true);
-        mainScreenResources->setText("Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
+        mainScreenClickers->setText("Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
+        mainScreenFactories->setText("Factories: " + factories.to_string());
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
         buyWindowContent[0]->setText("[1] Clicker: Clicks once every "+spc_ss.str()+"s. 10 points");
+        buyWindowContent[2]->setText("[3] Factory: Produces "+factory_cps.to_string()+" clickers every second. "+factory_cost.to_string()+" points");
 
         // Handle input
         switch (input) {
@@ -107,6 +121,15 @@ public:
                 if (clicker_lvl >= 10) { notify("Max level reached!"); return false; }
                 data->addResource(Clicker::clicker_lvl_bonus, N(1));
                 data->subPoints(N(100));
+                return false;
+            case '3':
+                if (!buyWindow->isVisible()) return false;
+                if (points >= factory_cost) {
+                    data->addResource(Factory::factory, N(1));
+                    data->subPoints(factory_cost);
+                } else {
+                    notify("Not enough points to buy factory! (Need "+factory_cost.to_string()+")");
+                }
                 return false;
             case -1:
                 return false;
