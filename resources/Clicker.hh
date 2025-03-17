@@ -43,7 +43,7 @@ public:
     }
 
     inline static BigNum getCost(const GameDataPtr data) {
-        return data->getResource(clicker).pow_float(1.15f) * 10;
+        return data->getResource(clicker).pow(1.15f) * 10;
     }
 
     static void onTick(const GameDataPtr data, const uint gameTick) {
