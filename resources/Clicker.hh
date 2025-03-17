@@ -42,6 +42,10 @@ public:
         return clickers * clicker_freq_secs;
     }
 
+    inline static BigNum getCost(const GameDataPtr data) {
+        return data->getResource(clicker).pow_float(1.15f) * 10;
+    }
+
     static void onTick(const GameDataPtr data, const uint gameTick) {
         // Process clickers
         const int lvl_bonus = data->getResource(clicker_lvl_bonus).to_number().value_or(0);

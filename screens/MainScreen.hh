@@ -27,6 +27,7 @@ private:
     BigNum clickers;
     int clicker_lvl;
     double clicker_spc;
+    BigNum clicker_cost;
     BigNum factories;
     BigNum factory_cps;
     BigNum factory_cost;
@@ -41,6 +42,7 @@ private:
         clickers = data->getResource(Clicker::clicker);
         clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
         clicker_spc = Clicker::getSpC(data);
+        clicker_cost = Clicker::getCost(data);
 
         factories = data->getResource(Factory::factory);
         factory_cps = Factory::getCpS(data);
@@ -51,10 +53,6 @@ private:
         
         // Get initial values
         refreshValues();
-        // points = data->getPoints();
-        // clickers = data->getResource(Clicker::clicker);
-        // clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
-        // clicker_spc = Clicker::getSpC(data);
 
         // Create screen elements
         mainScreenTitle = putText(0, 0, "Hello, world!");
@@ -93,7 +91,7 @@ public:
         mainScreenClickers->setText("Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
         mainScreenFactories->setText("Factories: " + factories.to_string());
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
-        buyWindowContent[0]->setText("[1] Clicker: Clicks once every "+spc_ss.str()+"s. 10 points");
+        buyWindowContent[0]->setText("[1] Clicker: Clicks once every "+spc_ss.str()+"s. "+clicker_cost.to_string()+" points");
         buyWindowContent[2]->setText("[3] Factory: Produces "+factory_cps.to_string()+" clickers every second. "+factory_cost.to_string()+" points");
 
         // Handle input
@@ -108,11 +106,11 @@ public:
                 return false;
             case '1':
                 if (!buyWindow->isVisible()) return false;
-                if (points >= 10) {
+                if (points >= clicker_cost) {
                     data->addResource(Clicker::clicker, N(1));
-                    data->subPoints(N(10));
+                    data->subPoints(clicker_cost);
                 } else {
-                    notify("Not enough points to buy clicker! (Need 10)");
+                    notify("Not enough points to buy clicker! (Need "+clicker_cost.to_string()+")");
                 }
                 return false;
             case '2':

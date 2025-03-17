@@ -37,7 +37,7 @@ public:
 
     // Cost to buy next Factory
     inline static BigNum getCost(const GameDataPtr data) {
-        return getLevel(data).pow(2) * 10;
+        return getLevel(data).pow_int(2) * 10;
     }
 
     static void onTick(const GameDataPtr data, const uint gameTick) {
