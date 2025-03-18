@@ -15,7 +15,7 @@ private:
     }
 
 public:
-    inline static const std::string factory = "factory";
+    inline static constexpr std::string factory = "factory";
 
     static Factory& getInstance() {
         static Factory instance;
@@ -26,18 +26,18 @@ public:
         (void) getInstance();
     }
 
-    inline static BigNum getLevel(const GameDataPtr data) {
-        return data->getResource(factory);
+    inline static BigNum getCount(const GameDataPtr data) {
+        return data->getResource(factory).value_or(N(0));
     }
 
     // Clickers per second
     inline static BigNum getCpS(const GameDataPtr data) {
-        return getLevel(data);
+        return getCount(data);
     }
 
     // Cost to buy next Factory
     inline static BigNum getCost(const GameDataPtr data) {
-        return getLevel(data).pow(2.0f) * 10;
+        return getCount(data).pow(2.0f) * 10;
     }
 
     static void onTick(const GameDataPtr data, const uint gameTick) {

@@ -18,6 +18,8 @@ using nlohmann::json;
 
 // Define extern variables
 ResourceTypes resourceTypes;
+UpgradeTypes upgradeTypes;
+UnlockTypes unlockTypes;
 
 namespace {
     // Private game variables

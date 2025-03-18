@@ -39,12 +39,12 @@ private:
 
     void refreshValues() {
         points = data->getPoints();
-        clickers = data->getResource(Clicker::clicker);
-        clicker_lvl = Clicker::getLevel(data).to_number().value_or(0);
+        clickers = Clicker::getCount(data);
+        clicker_lvl = Clicker::getLevel(data).to_number().value_or(1);
         clicker_spc = Clicker::getSpC(data);
         clicker_cost = Clicker::getCost(data);
 
-        factories = data->getResource(Factory::factory);
+        factories = Factory::getCount(data);
         factory_cps = Factory::getCpS(data);
         factory_cost = Factory::getCost(data);
     }
@@ -117,7 +117,7 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 if (points < 100) { notify("Not enough points to buy clicker level! (Need 100)"); return false; }
                 if (clicker_lvl >= 10) { notify("Max level reached!"); return false; }
-                data->addResource(Clicker::clicker_lvl_bonus, N(1));
+                data->addResource(Clicker::clicker_lvl, N(1));
                 data->subPoints(N(100));
                 return false;
             case '3':

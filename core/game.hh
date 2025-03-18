@@ -37,6 +37,46 @@ public:
 };
 extern ResourceTypes resourceTypes;
 
+class UpgradeTypes {
+private:
+    std::unordered_set<std::string> UpgradeIds;
+    std::mutex mtx;
+public:
+    void registerUpgrade(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx);
+        UpgradeIds.insert(id);
+    }
+    std::unordered_set<std::string> getUpgradeIds() {
+        std::lock_guard<std::mutex> lock(mtx);
+        return UpgradeIds;
+    }
+    bool contains(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx);
+        return UpgradeIds.contains(id);
+    }
+};
+extern UpgradeTypes upgradeTypes;
+
+class UnlockTypes {
+private:
+    std::unordered_set<std::string> UnlockIds;
+    std::mutex mtx;
+public:
+    void registerUnlock(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx);
+        UnlockIds.insert(id);
+    }
+    std::unordered_set<std::string> getUnlockIds() {
+        std::lock_guard<std::mutex> lock(mtx);
+        return UnlockIds;
+    }
+    bool contains(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx);
+        return UnlockIds.contains(id);
+    }
+};
+extern UnlockTypes unlockTypes;
+
 // Thread-safe game data class
 class GameData {
 private:
@@ -44,6 +84,10 @@ private:
     std::mutex mtx_points;
     std::unordered_map<std::string, BigNum> resources;
     std::mutex mtx_resources;
+    std::unordered_map<std::string, BigNum> upgrades;
+    std::mutex mtx_upgrades;
+    std::unordered_set<std::string> unlocks;
+    std::mutex mtx_unlocks;
 public:
     GameData() : points(BigNum(0)) {}
     GameData(BigNum points) : points(points) {}
@@ -68,10 +112,10 @@ public:
         points -= sub;
     }
 
-    BigNum getResource(const std::string id) {
+    std::optional<BigNum> getResource(const std::string id) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         if (!resources.contains(id)) {
-            return BigNum(0);
+            return std::nullopt;
         }
         return resources[id];
     }
@@ -88,6 +132,37 @@ public:
         }
         resources[id] += add;
     }
+
+    std::optional<BigNum> getUpgrade(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx_upgrades);
+        if (!upgrades.contains(id)) {
+            return std::nullopt;
+        }
+        return upgrades[id];
+    }
+
+    void setUpgrade(const std::string id, const BigNum& value) {
+        std::lock_guard<std::mutex> lock(mtx_upgrades);
+        upgrades[id] = value;
+    }
+
+    void addUpgrade(const std::string& id, const BigNum& add) {
+        std::lock_guard<std::mutex> lock(mtx_upgrades);
+        if (!upgrades.contains(id)) {
+            upgrades[id] = BigNum(0);
+        }
+        upgrades[id] += add;
+    }
+
+    bool hasUnlock(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx_unlocks);
+        return unlocks.contains(id);
+    }
+
+    void addUnlock(const std::string id) {
+        std::lock_guard<std::mutex> lock(mtx_unlocks);
+        unlocks.insert(id);
+    }
 };
 
 typedef std::shared_ptr<GameData> GameDataPtr;
@@ -96,14 +171,27 @@ typedef std::shared_ptr<GameData> GameDataPtr;
 json to_json(const GameDataPtr data) {
     json resources_json = json::object({});
     for (const auto &id : resourceTypes.getResourceIds()) {
-        BigNum val = data->getResource(id);
-        if (val != 0) {
-            resources_json[id] = val.serialize();
+        auto val = data->getResource(id);
+        if (val.has_value()) {
+            resources_json[id] = val.value().serialize();
         }
+    }
+    json upgrades_json = json::object({});
+    for (const auto &id : upgradeTypes.getUpgradeIds()) {
+        auto val = data->getUpgrade(id);
+        if (val.has_value()) {
+            upgrades_json[id] = val.value().serialize();
+        }
+    }
+    json unlocks_json = json::array({});
+    for (const auto &id : unlockTypes.getUnlockIds()) {
+        unlocks_json.push_back(id);
     }
     return json{
         {"points", data->getPoints().serialize()},
-        {"resources", resources_json}
+        {"resources", resources_json},
+        {"upgrades", upgrades_json},
+        {"unlocks", unlocks_json}
     };
 }
 
@@ -124,6 +212,24 @@ std::shared_ptr<GameData> from_json(const json& j) {
             }
             val.get_to(val_str);
             data->setResource(id, BigNum(val_str));
+        }
+
+        // Load upgrades
+        for (const auto& [id, val] : j.at("upgrades").items()) {
+            string val_str;
+            if (!val.is_string() || !upgradeTypes.contains(id)) {
+                throw std::runtime_error("Upgrade id is not a valid type: '" + id + "'");
+            }
+            val.get_to(val_str);
+            data->setUpgrade(id, BigNum(val_str));
+        }
+
+        // Load unlocks
+        for (const auto& val : j.at("unlocks")) {
+            if (!val.is_string() || !unlockTypes.contains(val)) {
+                throw std::runtime_error("Unlock id is not a valid type: '" + val.get<string>() + "'");
+            }
+            data->addUnlock(val.get<string>());
         }
 
         return data;
