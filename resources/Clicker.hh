@@ -2,60 +2,77 @@
 
 #include <iostream>
 #include "../core/game.hh"
+#include "../core/resourceRegistry.hh"
 
-class Clicker {
+class Clicker: public RegisteredResource<Clicker> {
 private:
-    Clicker() {
-        // Register resource ids
-        std::cerr << "Registering resource ids" << std::endl;
-        resourceTypes.registerResource(clicker);
-        upgradeTypes.registerUpgrade(clicker_lvl);
-    }
+    BigNum count = N(0);
+    BigNum level = N(1);
 
 public:
-    inline static constexpr std::string clicker = "clicker";
-    inline static constexpr std::string clicker_lvl = "clicker_lvl";
-
-    static Clicker& getInstance() {
-        static Clicker instance;
+    static constexpr const char* RESOURCE_ID = "clicker";
+    Clicker() {
+        std::cerr << "Instantiating Clicker" << std::endl;
+    }
+    
+    static std::shared_ptr<Clicker> getInstance() {
+        static std::shared_ptr<Clicker> instance = std::make_shared<Clicker>();
+        registerResource();
         return instance;
     }
 
-    static void create() {
-        (void) getInstance();
+    virtual json serialize() const override {
+        json j;
+        j["count"] = count.to_string();
+        j["level"] = level.to_string();
+        return j;
     }
 
-    inline static BigNum getCount(const GameDataPtr data) {
-        return data->getResource(clicker).value_or(N(0));
+    virtual void deserialize(const json& j) override {
+        if (j.contains("count")) { count = BigNum(j["count"].get<string>()); }
+        if (j.contains("level")) { level = BigNum(j["level"].get<string>()); }
     }
 
-    inline static BigNum getLevel(const GameDataPtr data) {
-        return data->getUpgrade(clicker_lvl).value_or(N(1));
+    BigNum getCount() {
+        return count;
     }
 
-    inline static double getSpC(const GameDataPtr data) {
-        const int lvl_bonus = data->getUpgrade(clicker_lvl).value_or(N(1)).to_number().value_or(1) - 1;
+    BigNum getLevel() {
+        return level;
+    }
+
+    void addCount(const BigNum& amount) {
+        count += amount;
+    }
+
+    void addLevel(const BigNum& amount) {
+        level += amount;
+    }
+
+    double getSpC() {
+        const int lvl_bonus = level.to_number().value_or(1) - 1;
         const int clicker_freq_ticks = std::max(static_cast<int>(GAME_TICK_SPEED - 3*lvl_bonus), 1);
         const double clicker_freq_secs = static_cast<double>(clicker_freq_ticks) / static_cast<double>(GAME_TICK_SPEED);
         return clicker_freq_secs;
     }
     
-    inline static BigNum getCps(const GameDataPtr data) {
-        const double clicker_freq_secs = getSpC(data);
-        BigNum clickers = data->getResource(clicker).value_or(N(0));
-        return clickers * clicker_freq_secs;
+    BigNum getCps() {
+        const double clicker_freq_secs = getSpC();
+        return count * clicker_freq_secs;
     }
 
-    inline static BigNum getCost(const GameDataPtr data) {
-        return (data->getResource(clicker).value_or(N(0))+1).pow(1.15f) * 10;
+    BigNum getCost() {
+        return ((count+1)*10).pow(1.15f);
     }
 
-    static void onTick(const GameDataPtr data, const uint gameTick) {
+    virtual void onTick(const uint &gameTick) override {
         // Process clickers
-        const int lvl_bonus = data->getUpgrade(clicker_lvl).value_or(N(1)).to_number().value_or(0);
+        if (count == 0) { return; }
+        const int lvl_bonus = level.to_number().value_or(1) - 1;
         const int clicker_freq_ticks = std::max(static_cast<int>(GAME_TICK_SPEED - 3*lvl_bonus), 1);
-        BigNum clickers = data->getResource(clicker).value_or(N(0));
-        if (gameTick % clicker_freq_ticks == 0) { data->addPoints(clickers); }
+        if (gameTick % clicker_freq_ticks == 0) { 
+            ResourceRegistry.addPoints(count); 
+        }
     }
 
     // Delete copy constructor and assignment operator to prevent copying

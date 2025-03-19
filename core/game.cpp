@@ -16,22 +16,17 @@
 using std::cout, std::endl;
 using nlohmann::json;
 
-// Define extern variables
-ResourceTypes resourceTypes;
-UpgradeTypes upgradeTypes;
-UnlockTypes unlockTypes;
+// Initialize extern variables
+_ResourceRegistry& ResourceRegistry = _ResourceRegistry::getInstance();
 
 namespace {
     // Private game variables
     uint tick = 0;
     std::atomic_bool do_exit = false;
-    GameDataPtr data = nullptr;
 }
 
 void gameTick() {
-    if (!data) { std::cerr << "GameData is null" << std::endl; return; }
-    Clicker::onTick(data, tick);
-    Factory::onTick(data, tick);
+    ResourceRegistry.onTick(tick);
     tick++;
 }
 
@@ -53,14 +48,15 @@ void gameWorker() {
 
 int run(string savefile) {
 
+    assert(BigNum(0) == 0 && "BigNum(0) != 0");
+
     // Initialize resoruces
     std::cerr << "Creating resources" << std::endl;
-    Clicker::create();
-    Factory::create();
+    (void) Clicker::getInstance();
+    (void) Factory::getInstance();
 
     // Load game data
-    std::cerr << "Loading game data" << std::endl;
-    data = load(savefile);
+    load(savefile);
 
     // Initialize ncurses
     std::cerr << "Setting up ncurses" << std::endl;
@@ -68,9 +64,9 @@ int run(string savefile) {
 
     // Create and setup ScreenManager and Screen
     std::cerr << "Creating mainScreen" << std::endl;
-    ScreenPtr mainScreen = MainScreen::create(data);
+    ScreenPtr mainScreen = MainScreen::create();
     std::cerr << "Creating ScreenManager" << std::endl;
-    ScreenManager &manager = ScreenManager::getInstance(data, mainScreen);
+    ScreenManager &manager = ScreenManager::getInstance(mainScreen);
 
     // Main game loop
     std::cerr << "Starting game thread" << std::endl;
@@ -80,11 +76,12 @@ int run(string savefile) {
     });
     std::cerr << "Starting render loop" << std::endl;
     manager.run();
-
+    std::cerr << "Render loop ended" << std::endl;
     // Cleanup
     do_exit = true;
     gameThread.join();
-    save(data, savefile);
+    std::cerr << "Game thread ended" << std::endl;
+    save(savefile);
 
     return 0;
 }

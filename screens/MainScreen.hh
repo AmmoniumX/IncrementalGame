@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/game.hh"
+#include "../core/resourceRegistry.hh"
 #include "../core/render.hh"
 #include "../resources/Clicker.hh"
 #include "../resources/Factory.hh"
@@ -10,7 +11,6 @@
 class MainScreen : public Screen {
 private:
     static constexpr double NOTIF_DURATION = 1.5 * FRAME_RATE;
-    GameDataPtr data;
     TextPtr notifyText;
     double notifyTime = 0;
     TextPtr mainScreenTitle;
@@ -23,6 +23,8 @@ private:
     std::vector<TextPtr> buyWindowContent;
 
     // Local variable copies
+    std::shared_ptr<Clicker> clicker;
+    std::shared_ptr<Factory> factory;
     BigNum points;
     BigNum clickers;
     int clicker_lvl;
@@ -38,18 +40,23 @@ private:
     }
 
     void refreshValues() {
-        points = data->getPoints();
-        clickers = Clicker::getCount(data);
-        clicker_lvl = Clicker::getLevel(data).to_number().value_or(1);
-        clicker_spc = Clicker::getSpC(data);
-        clicker_cost = Clicker::getCost(data);
+        points = ResourceRegistry.getPoints();
+        clickers = clicker->getCount();
+        clicker_lvl = clicker->getLevel().to_number().value_or(1);
+        clicker_spc = clicker->getSpC();
+        clicker_cost = clicker->getCost();
 
-        factories = Factory::getCount(data);
-        factory_cps = Factory::getCpS(data);
-        factory_cost = Factory::getCost(data);
+        factories = factory->getCount();
+        factory_cps = factory->getCpS();
+        factory_cost = factory->getCost();
     }
 
-    MainScreen(const GameDataPtr data) : Screen(), data(data) {
+public:
+    MainScreen() : Screen() {
+
+        // Get resources
+        clicker = ResourceRegistry.getResource<Clicker>(Clicker::RESOURCE_ID);
+        factory = ResourceRegistry.getResource<Factory>(Factory::RESOURCE_ID);
         
         // Get initial values
         refreshValues();
@@ -69,16 +76,16 @@ private:
         buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close"));
         notifyText = putText(LINES-1, 0, "");
 
-        setOnTick([this](const GameDataPtr data, const char input) { return this->onTick(data, input); });
-    }
-public:
-    static ScreenPtr create(const GameDataPtr data) {
-        return std::shared_ptr<MainScreen>(new MainScreen(data));
+        setOnTick([this](const char input) { return this->onTick(input); });
     }
 
-    MainScreen() = delete;
+    static ScreenPtr create() {
+        return std::make_shared<MainScreen>();
+    }
 
-    bool onTick(const GameDataPtr data, const char input) {
+    // MainScreen() = delete;
+
+    bool onTick(const char input) {
         // Update local variables
         refreshValues();
 
@@ -99,32 +106,38 @@ public:
             case 'q':
                 return true;
             case '\n':
-                data->addPoints(N(1));
+                ResourceRegistry.addPoints(N(1));
                 return false;
             case 'b':
                 buyWindow->toggle();
                 return false;
             case '1':
                 if (!buyWindow->isVisible()) return false;
+                points = ResourceRegistry.getPoints();
                 if (points >= clicker_cost) {
-                    data->addResource(Clicker::clicker, N(1));
-                    data->subPoints(clicker_cost);
+                    clicker->addCount(N(1));
+                    points -= clicker_cost;
+                    ResourceRegistry.setPoints(points);
                 } else {
                     notify("Not enough points to buy clicker! (Need "+clicker_cost.to_string()+")");
                 }
                 return false;
             case '2':
                 if (!buyWindow->isVisible()) return false;
+                points = ResourceRegistry.getPoints();
                 if (points < 100) { notify("Not enough points to buy clicker level! (Need 100)"); return false; }
                 if (clicker_lvl >= 10) { notify("Max level reached!"); return false; }
-                data->addResource(Clicker::clicker_lvl, N(1));
-                data->subPoints(N(100));
+                clicker->addLevel(N(1));
+                points -= N(100);
+                ResourceRegistry.setPoints(points);
                 return false;
             case '3':
                 if (!buyWindow->isVisible()) return false;
+                points = ResourceRegistry.getPoints();
                 if (points >= factory_cost) {
-                    data->addResource(Factory::factory, N(1));
-                    data->subPoints(factory_cost);
+                    factory->addCount(N(1));
+                    points -= factory_cost;
+                    ResourceRegistry.setPoints(points);
                 } else {
                     notify("Not enough points to buy factory! (Need "+factory_cost.to_string()+")");
                 }

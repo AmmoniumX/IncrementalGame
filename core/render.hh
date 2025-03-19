@@ -167,10 +167,10 @@ class Screen {
 private:
     std::vector<std::shared_ptr<Text>> texts; // Screen-level texts
     std::vector<std::shared_ptr<Window>> windows; // Screen-level windows
-    std::function<bool(const GameDataPtr, const char)> onTick = nullptr;
+    std::function<bool(const char)> onTick = nullptr;
 
 public:
-    void setOnTick(const std::function<bool(const GameDataPtr, const char)> onTick) {
+    void setOnTick(const std::function<bool(const char)> onTick) {
         this->onTick = onTick;
     }
 
@@ -197,10 +197,10 @@ public:
         refresh();
     }
 
-    bool tick(GameDataPtr data, char input) {
+    bool tick(char input) {
         // Return true if exit is requested
         if (onTick) {
-            return onTick(data, input);
+            return onTick(input);
         }
         return false;
     }
@@ -213,16 +213,13 @@ typedef std::shared_ptr<Screen> ScreenPtr;
 */
 class ScreenManager { // Singleton class
 private:
-    // std::vector<ScreenPtr> loadedScreens;
-    GameDataPtr data = nullptr;
     ScreenPtr currentScreen = nullptr;
     std::shared_ptr<Screen> nextScreen = nullptr;
     bool screenChange = false;
     bool exitRequested = false;
 
     // Private constructor for singleton
-    ScreenManager(const GameDataPtr data, const ScreenPtr screen) : 
-        data(data), currentScreen(screen) {};
+    ScreenManager(const ScreenPtr screen) : currentScreen(screen) {};
     
     // Deleted copy constructor and assignment operator
     ScreenManager(const ScreenManager&) = delete;
@@ -230,8 +227,8 @@ private:
 
 public:
     // Static method to get the singleton instance
-    static ScreenManager& getInstance(const GameDataPtr data, const ScreenPtr screen) {
-        static ScreenManager instance(data, screen);
+    static ScreenManager& getInstance(const ScreenPtr screen) {
+        static ScreenManager instance(screen);
         return instance;
     }
 
@@ -251,7 +248,7 @@ public:
     }
 
     void run() {
-        if (!data || !currentScreen) throw std::runtime_error("ScreenManager is not initialized!");
+        if (!currentScreen) throw std::runtime_error("ScreenManager is not initialized!");
 
         do {
             // Run a single frame
@@ -263,7 +260,7 @@ public:
             }
             currentScreen->render();
             char input = getch();
-            exitRequested = currentScreen->tick(data, input);
+            exitRequested = currentScreen->tick(input);
             time_t end = time(nullptr);
 
             // Calculate time to sleep
