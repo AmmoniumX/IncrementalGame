@@ -18,6 +18,15 @@ using N = BigNum;
 
 static constexpr int GAME_TICK_SPEED = 30;
 
+// helper json method
+template <typename T>
+T get_or(const json& j, const std::string& key, const T& default_value) {
+    if (j.contains(key)) {
+        return j[key].get<T>();
+    }
+    return default_value;
+}
+
 // Convert game data to json
 json to_json() {
     return ResourceRegistry.serialize();

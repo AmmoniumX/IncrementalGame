@@ -27,11 +27,13 @@ private:
     std::shared_ptr<Factory> factory;
     BigNum points;
     BigNum clickers;
-    int clicker_lvl;
+    BigNum speed;
+    BigNum prod;
     double clicker_spc;
     BigNum clicker_cost;
+    BigNum clicker_speed_cost;
+    BigNum clicker_prod_cost;
     BigNum factories;
-    BigNum factory_cps;
     BigNum factory_cost;
 
     void notify(const std::string& text) {
@@ -42,13 +44,10 @@ private:
     void refreshValues() {
         points = ResourceRegistry.getPoints();
         clickers = clicker->getCount();
-        clicker_lvl = clicker->getLevel().to_number().value_or(1);
+        speed = clicker->getSpeed();
+        prod = clicker->getProd();
         clicker_spc = clicker->getSpC();
-        clicker_cost = clicker->getCost();
-
         factories = factory->getCount();
-        factory_cps = factory->getCpS();
-        factory_cost = factory->getCost();
     }
 
 public:
@@ -64,15 +63,16 @@ public:
         // Create screen elements
         mainScreenTitle = putText(0, 0, "Hello, world!");
         mainScreenScore = putText(1, 0, "Points: " + points.to_string());
-        mainScreenClickers = putText(2, 0, "Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
+        mainScreenClickers = putText(2, 0, "Clickers: " + clickers.to_string() + " (Speed: " + speed.to_string() + ", Prod:" + prod.to_string() + ")");
         mainScreenFactories = putText(3, 0, "Factories: " + factories.to_string());
         mainScreenInfo = putText(4, 0, "[ENTER] Click | [B] Buy | [Q] Quit");
         buyWindow = createWindow(8, 0, COLS-1, 10, false);
         buyWindow->putText(0, 2, "Buy Menu:");
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
-        buyWindowContent.push_back(buyWindow->putText(1, 1, "[1] Clicker: Clicks once every "+spc_ss.str()+"s. 10 points"));
-        buyWindowContent.push_back(buyWindow->putText(2, 1, "[2] LVL Clicker: Speeds up clicker speed by 0.1s. Max 10 levels. 100 points"));
-        buyWindowContent.push_back(buyWindow->putText(3, 1, "[3] Factory: Produces 0 clickers every second. 1000 points"));
+        buyWindowContent.push_back(buyWindow->putText(1, 1, "[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. 10 points"));
+        buyWindowContent.push_back(buyWindow->putText(2, 1, "[2] Clicker Speed: Speeds up clicker speed by 0.1s. Max 10 levels. 100 points"));
+        buyWindowContent.push_back(buyWindow->putText(3, 1, "[3] Clicker Productivity: Increases points per click by 1 (currently 1). 1000 points"));
+        buyWindowContent.push_back(buyWindow->putText(4, 1, "[4] Factory: Produces 1 clicker every second. 1000 points"));
         buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close"));
         notifyText = putText(LINES-1, 0, "");
 
@@ -95,11 +95,18 @@ public:
             notifyText->reset();
         }
         mainScreenScore->setText("Points: " + points.to_string(), true);
-        mainScreenClickers->setText("Clickers: " + clickers.to_string() + " (Lvl " + std::to_string(clicker_lvl) + ")");
+        mainScreenClickers->setText("Clickers: " + clickers.to_string() + " (Speed: " + speed.to_string() + ", Prod:" + prod.to_string() + ")");
         mainScreenFactories->setText("Factories: " + factories.to_string());
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
-        buyWindowContent[0]->setText("[1] Clicker: Clicks once every "+spc_ss.str()+"s. "+clicker_cost.to_string()+" points");
-        buyWindowContent[2]->setText("[3] Factory: Produces "+factory_cps.to_string()+" clickers every second. "+factory_cost.to_string()+" points");
+
+        clicker_cost = clicker->getCost();
+        buyWindowContent[0]->setText("[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. "+clicker_cost.to_string()+" points");
+        clicker_speed_cost = clicker->getSpeedCost();
+        buyWindowContent[1]->setText("[2] Clicker Speed: Speeds up clicker speed by 0.1s. Max 10 levels. "+clicker_speed_cost.to_string()+" points");
+        clicker_prod_cost = clicker->getProdCost();
+        buyWindowContent[2]->setText("[3] Clicker Productivity: Increases points per click by 1 (currently "+prod.to_string()+"). "+clicker_prod_cost.to_string()+" points");
+        factory_cost = factory->getCost();
+        buyWindowContent[3]->setText("[4] Factory: Produces 1 clicker every second. "+factory_cost.to_string()+" points");
 
         // Handle input
         switch (input) {
@@ -114,6 +121,7 @@ public:
             case '1':
                 if (!buyWindow->isVisible()) return false;
                 points = ResourceRegistry.getPoints();
+                clicker_cost = clicker->getCost();
                 if (points >= clicker_cost) {
                     clicker->addCount(N(1));
                     points -= clicker_cost;
@@ -125,13 +133,23 @@ public:
             case '2':
                 if (!buyWindow->isVisible()) return false;
                 points = ResourceRegistry.getPoints();
-                if (points < 100) { notify("Not enough points to buy clicker level! (Need 100)"); return false; }
-                if (clicker_lvl >= 10) { notify("Max level reached!"); return false; }
-                clicker->addLevel(N(1));
-                points -= N(100);
+                clicker_speed_cost = clicker->getSpeedCost();
+                if (points < clicker_speed_cost) { notify("Not enough points to buy clicker speed! (Need 100)"); return false; }
+                if (speed >= Clicker::MAX_SPEED) { notify("Max speed reached!"); return false; }
+                clicker->addSpeed(N(1));
+                points -= clicker_speed_cost;
                 ResourceRegistry.setPoints(points);
                 return false;
             case '3':
+                if (!buyWindow->isVisible()) return false;
+                points = ResourceRegistry.getPoints();
+                clicker_prod_cost = clicker->getProdCost();
+                if (points < 1000) { notify("Not enough points to buy clicker productivity! (Need 1000)"); return false; }
+                clicker->addProd(N(1));
+                points -= clicker_prod_cost;
+                ResourceRegistry.setPoints(points);
+                return false;
+            case '4':
                 if (!buyWindow->isVisible()) return false;
                 points = ResourceRegistry.getPoints();
                 if (points >= factory_cost) {

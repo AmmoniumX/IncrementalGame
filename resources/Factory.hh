@@ -29,7 +29,7 @@ public:
     }
 
     virtual void deserialize(const json& j) override {
-        if (j.contains("count")) { count = BigNum(j["count"].get<string>()); }
+        count = BigNum(get_or<string>(j, "count", "0"));
     }
     
     BigNum getCount() {
