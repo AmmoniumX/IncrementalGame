@@ -7,11 +7,11 @@
 #include <ctime>
 #include <atomic>
 
-#include "game.hh"
-#include "render.hh"
-#include "../screens/MainScreen.hh"
-#include "../resources/Clicker.hh"
-#include "../resources/Factory.hh"
+#include "game.hpp"
+#include "render.hpp"
+#include "../screens/MainScreen.hpp"
+#include "../resources/Clicker.hpp"
+#include "../resources/Factory.hpp"
 
 using std::cout, std::endl;
 using nlohmann::json;

@@ -1,9 +1,9 @@
 #pragma once
 
 #include <iostream>
-#include "../core/game.hh"
-#include "../core/resourceRegistry.hh"
-#include "./Clicker.hh"
+#include "../core/game.hpp"
+#include "../core/resourceRegistry.hpp"
+#include "./Clicker.hpp"
 
 class Factory : public RegisteredResource<Factory> {
 private:

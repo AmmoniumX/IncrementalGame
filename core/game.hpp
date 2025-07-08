@@ -8,9 +8,9 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "BigNum.hh"
-#include "json.hh"
-#include "resourceRegistry.hh"
+#include "BigNum.hpp"
+#include "json.hpp"
+#include "resourceRegistry.hpp"
 
 using std::string;
 using nlohmann::json;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../core/game.hh"
-#include "../core/resourceRegistry.hh"
-#include "../core/render.hh"
-#include "../resources/Clicker.hh"
-#include "../resources/Factory.hh"
+#include "../core/game.hpp"
+#include "../core/resourceRegistry.hpp"
+#include "../core/render.hpp"
+#include "../resources/Clicker.hpp"
+#include "../resources/Factory.hpp"
 #include <sstream>
 #include <cmath>
 

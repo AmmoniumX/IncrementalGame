@@ -1,6 +1,6 @@
 # Compiler Flags
 CXX = g++
-CXXFLAGS = -Wall -Wextra -I/usr/include -std=c++23
+CXXFLAGS = -Wall -Wextra -I/usr/include -std=c++26 -fno-trapping-math -march=native -fsanitize=address,undefined
 
 # Target-dependent Flags
 DEBUGFLAGS = -g -O0
@@ -12,9 +12,9 @@ LDFLAGS = -lncurses
 # Target and Source Files
 TARGET = bin/game
 
-CORE_HDRS = $(wildcard core/*.hh)
-SCREENS_HDRS = $(wildcard screens/*.hh)
-RESOURCES_HDRS = $(wildcard resources/*.hh)
+CORE_HDRS = $(wildcard core/*.hpp)
+SCREENS_HDRS = $(wildcard screens/*.hpp)
+RESOURCES_HDRS = $(wildcard resources/*.hpp)
 
 CORE_SRCS = $(wildcard core/*.cpp)
 SCREENS_SRCS = $(wildcard screens/*.cpp)

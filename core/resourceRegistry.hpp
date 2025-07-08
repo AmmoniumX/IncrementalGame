@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <memory>
 #include <mutex>
-#include "../core/json.hh"
+#include "../core/json.hpp"
 using nlohmann::json;
 
 class Resource {

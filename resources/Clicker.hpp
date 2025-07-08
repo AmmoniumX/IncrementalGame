@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iostream>
-#include "../core/game.hh"
-#include "../core/resourceRegistry.hh"
+#include "../core/game.hpp"
+#include "../core/resourceRegistry.hpp"
 
 class Clicker: public RegisteredResource<Clicker> {
 private:
