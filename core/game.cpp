@@ -48,8 +48,6 @@ void gameWorker() {
 
 int run(string savefile) {
 
-    assert(BigNum(0) == 0 && "BigNum(0) != 0");
-
     // Initialize resoruces
     std::cerr << "Creating resources" << std::endl;
     (void) Clicker::getInstance();

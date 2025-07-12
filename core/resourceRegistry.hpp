@@ -6,6 +6,7 @@
 #include <memory>
 #include <mutex>
 #include "../core/json.hpp"
+#include "../core/BigNum.hpp"
 using nlohmann::json;
 
 class Resource {
