@@ -1,2 +1,2 @@
 #!/bin/bash
-make && ./bin/game 2>./logs/err.log
+make debug && ./bin/debug/game 2>./logs/err.log

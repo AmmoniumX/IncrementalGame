@@ -1,46 +1,62 @@
-# Compiler Flags
+# Compiler
 CXX = g++
-CXXFLAGS = -Wall -Wextra -I/usr/include -std=c++26 -fno-trapping-math -march=native -fsanitize=address,undefined
 
-# Target-dependent Flags
-DEBUGFLAGS = -g -O0
-OPTIMIZATIONFLAGS = -O3
+# Common Flags
+CXXFLAGS = -Wall -Wextra -Werror -I/usr/include -std=c++26 -fno-trapping-math -march=native
 
 # Libraries
 LDFLAGS = -lncurses
 
-# Target and Source Files
-TARGET = bin/game
-
+# Source and Header Files
 CORE_HDRS = $(wildcard core/*.hpp)
 SCREENS_HDRS = $(wildcard screens/*.hpp)
 RESOURCES_HDRS = $(wildcard resources/*.hpp)
+HDRS = $(CORE_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
 
 CORE_SRCS = $(wildcard core/*.cpp)
 SCREENS_SRCS = $(wildcard screens/*.cpp)
 RESOURCES_SRCS = $(wildcard resources/*.cpp)
-
 SRCS = $(CORE_SRCS) $(SCREENS_SRCS) $(RESOURCES_SRCS)
-OBJS = $(SRCS:.cpp=.o)
 
+# Default: build release
+all: release
 
-# Build Rules
-all: $(TARGET)
+# --- Debug Build ---
+DEBUG_DIR = bin/debug
+DEBUG_OBJ_DIR = obj/debug
+DEBUG_TARGET = $(DEBUG_DIR)/game
+DEBUG_OBJS = $(patsubst %.cpp,$(DEBUG_OBJ_DIR)/%.o,$(SRCS))
+DEBUG_CXXFLAGS = $(CXXFLAGS) -g -O0
 
-bin/game: $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+debug: $(DEBUG_TARGET)
 
-core/game.o: core/game.cpp $(CORE_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+$(DEBUG_TARGET): $(DEBUG_OBJS)
+	@mkdir -p $(DEBUG_DIR)
+	$(CXX) -o $@ $^ $(LDFLAGS)
 
-# Phony Targets
+$(DEBUG_OBJ_DIR)/%.o: %.cpp $(HDRS)
+	@mkdir -p $(@D)
+	$(CXX) $(DEBUG_CXXFLAGS) -c -o $@ $<
+
+# --- Release Build ---
+RELEASE_DIR = bin/release
+RELEASE_OBJ_DIR = obj/release
+RELEASE_TARGET = $(RELEASE_DIR)/game
+RELEASE_OBJS = $(patsubst %.cpp,$(RELEASE_OBJ_DIR)/%.o,$(SRCS))
+RELEASE_CXXFLAGS = $(CXXFLAGS) -O3 -fsanitize=address,undefined
+
+release: $(RELEASE_TARGET)
+
+$(RELEASE_TARGET): $(RELEASE_OBJS)
+	@mkdir -p $(RELEASE_DIR)
+	$(CXX) -o $@ $^ $(LDFLAGS) -fsanitize=address,undefined
+
+$(RELEASE_OBJ_DIR)/%.o: %.cpp $(HDRS)
+	@mkdir -p $(@D)
+	$(CXX) $(RELEASE_CXXFLAGS) -c -o $@ $<
+
+# --- Phony Targets ---
 clean:
-	rm -f $(OBJS) $(TARGET)
-
-debug: CXXFLAGS += $(DEBUGFLAGS)
-debug: all
-
-release: CXXFLAGS += $(OPTIMIZATIONFLAGS)
-release: all
+	rm -rf obj bin
 
 .PHONY: all clean debug release
