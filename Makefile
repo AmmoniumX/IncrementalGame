@@ -57,6 +57,6 @@ $(RELEASE_OBJ_DIR)/%.o: %.cpp $(HDRS)
 
 # --- Phony Targets ---
 clean:
-	rm -rf obj bin
+	rm -rf ./obj/ ./bin/
 
 .PHONY: all clean debug release
