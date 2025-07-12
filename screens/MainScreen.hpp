@@ -68,14 +68,14 @@ public:
         mainScreenInfo = putText(4, 0, "[ENTER] Click | [B] Buy | [Q] Quit");
 
         // Create buy window
-        buyWindow = createWindow(8, 0, COLS-1, 9, false, YELLOW_BLACK_PAIR);
+        buyWindow = createWindow(8, 0, COLS-1, 9, false, GAME_COLORS::YELLOW_BLACK);
         buyWindow->putText(0, 2, "Buy Menu:");
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
         buyWindowContent.push_back(buyWindow->putText(1, 1, "[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. 10 points"));
         buyWindowContent.push_back(buyWindow->putText(2, 1, "[2] Clicker Speed: Speeds up clicker speed by 0.1s. Max 10 levels. 100 points"));
         buyWindowContent.push_back(buyWindow->putText(3, 1, "[3] Clicker Productivity: Increases points per click by 1 (currently 1). 1000 points"));
         buyWindowContent.push_back(buyWindow->putText(4, 1, "[4] Factory: Produces 1 clicker every second. 1000 points"));
-        buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close"));
+        buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close", GAME_COLORS::WHITE_BLACK));
 
         // Create notification text
         notifyText = putText(LINES-1, 0, "");

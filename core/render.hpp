@@ -11,7 +11,13 @@
 
 // Constants
 constexpr uint FRAME_RATE = 30;
-constexpr int YELLOW_BLACK_PAIR = 1;
+
+namespace GAME_COLORS {
+    constexpr int DEFAULT = 0; // Default color pair
+    constexpr int YELLOW_BLACK = 1; // Yellow on black
+    constexpr int RED_BLACK = 2; // Red on black
+    constexpr int WHITE_BLACK = 3; // White on black
+}
 
 // Ncurses setup
 void setupNcurses() {
@@ -23,7 +29,10 @@ void setupNcurses() {
     start_color();          // Enable color functionality
     curs_set(0);            // Hide the cursor
 
-    init_pair(YELLOW_BLACK_PAIR, COLOR_YELLOW, COLOR_BLACK); // Initialize color pair
+    // Initialize color pairs
+    init_pair(GAME_COLORS::YELLOW_BLACK, COLOR_YELLOW, COLOR_BLACK);
+    init_pair(GAME_COLORS::RED_BLACK, COLOR_RED, COLOR_BLACK);
+    init_pair(GAME_COLORS::WHITE_BLACK, COLOR_WHITE, COLOR_BLACK);
 }
 
 /*
@@ -39,6 +48,7 @@ class Text {
 private:
     int y, x;
     std::string text;
+    int color_pair = 0;
     std::shared_ptr<WINDOW> win;
     int needsClear = 0;
     void doClear(int len) {
@@ -53,8 +63,8 @@ private:
         doClear(static_cast<int>(text.size()));
     }
 public:
-    Text(int y, int x, const std::string& text, std::shared_ptr<WINDOW> win=nullptr) : 
-        y(y), x(x), text(text), win(win) {}
+    Text(int y, int x, const std::string& text, int color_pair = 0, std::shared_ptr<WINDOW> win=nullptr) : 
+        y(y), x(x), text(text), color_pair(color_pair), win(win) {}
 
     std::string getText() const { return text; }
     int getX() const { return x; }
@@ -67,6 +77,15 @@ public:
     void setX(int px) { x = px; }
     void setY(int py) { y = py; }
 
+    void setColorPair(int pair) { 
+        if (pair < 0) {
+            std::cerr << "Invalid color pair: " << pair << std::endl;
+            return;
+        }
+        color_pair = pair; 
+    }
+    int getColorPair() const { return color_pair; }
+
     void render() {
         if (needsClear > 0) {
             doClear(needsClear);
@@ -74,10 +93,24 @@ public:
         }
         if (text.empty()) { return; }
 
-        if (!win) {
-            mvprintw(y, x, "%s", text.c_str());
+        // Apply color before rendering text
+        if (color_pair > 0) {
+            if (!win) {
+                attron(COLOR_PAIR(color_pair));
+                mvprintw(y, x, "%s", text.c_str());
+                attroff(COLOR_PAIR(color_pair));
+            } else {
+                wattron(win.get(), COLOR_PAIR(color_pair));
+                mvwprintw(win.get(), y, x, "%s", text.c_str());
+                wattroff(win.get(), COLOR_PAIR(color_pair));
+            }
         } else {
-            mvwprintw(win.get(), y, x, "%s", text.c_str());
+            // Render without color
+            if (!win) {
+                mvprintw(y, x, "%s", text.c_str());
+            } else {
+                mvwprintw(win.get(), y, x, "%s", text.c_str());
+            }
         }
     }
 
@@ -160,8 +193,8 @@ public:
         wrefresh(win.get());
     }
 
-    std::shared_ptr<Text> putText(int textY, int textX, const std::string& text) {
-        auto textObj = std::make_shared<Text>(textY, textX, text, win);
+    std::shared_ptr<Text> putText(int textY, int textX, const std::string& text, int text_color_pair=0) {
+        auto textObj = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
         texts.push_back(textObj);
         return textObj;
     }
@@ -183,8 +216,8 @@ public:
         this->onTick = onTick;
     }
 
-    std::shared_ptr<Text> putText(int y, int x, const std::string& text) {
-        auto textObj = std::make_shared<Text>(y, x, text);
+    std::shared_ptr<Text> putText(int y, int x, const std::string& text, int color_pair=0) {
+        auto textObj = std::make_shared<Text>(y, x, text, color_pair);
         texts.push_back(textObj);
         return textObj;
     }
