@@ -10,7 +10,8 @@
 #include <ctime>
 
 // Constants
-inline constexpr uint FRAME_RATE = 30;
+constexpr uint FRAME_RATE = 30;
+constexpr int YELLOW_BLACK_PAIR = 1;
 
 // Ncurses setup
 void setupNcurses() {
@@ -21,6 +22,8 @@ void setupNcurses() {
     keypad(stdscr, TRUE);   // Enable special keys
     start_color();          // Enable color functionality
     curs_set(0);            // Hide the cursor
+
+    init_pair(YELLOW_BLACK_PAIR, COLOR_YELLOW, COLOR_BLACK); // Initialize color pair
 }
 
 /*
@@ -99,6 +102,7 @@ typedef std::shared_ptr<Text> TextPtr;
 * @param width The width of the window.
 * @param height The height of the window.
 * @param visible Whether the window is currently visible or not.
+* @param color_pair The color pair to use for the window background (default is 0, which means no color).
 */
 class Window {
 private:
@@ -106,10 +110,15 @@ private:
     std::vector<std::shared_ptr<Text>> texts; // Window-level texts
     int x, y, width, height;
     bool visible;
+    int color_pair;
 public:
-    Window(int x, int y, int width, int height, bool visible) 
-    : x(x), y(y), width(width), height(height), visible(visible) {
+    Window(int x, int y, int width, int height, bool visible, int color_pair=0) 
+    : x(x), y(y), width(width), height(height), visible(visible), color_pair(color_pair) {
         win = std::shared_ptr<WINDOW>(newwin(height, width, y, x), [](WINDOW* w) { delwin(w); });
+
+        if (color_pair > 0) {
+            wbkgd(win.get(), COLOR_PAIR(color_pair)); // Set background color if color is set
+        }
     }
 
     bool isVisible() const { return visible; }
@@ -180,8 +189,8 @@ public:
         return textObj;
     }
 
-    std::shared_ptr<Window> createWindow(int y, int x, int width, int height, bool visible=true) {
-        auto window = std::make_shared<Window>(x, y, width, height, visible);
+    std::shared_ptr<Window> createWindow(int y, int x, int width, int height, bool visible=true, int color_pair=0) {
+        auto window = std::make_shared<Window>(x, y, width, height, visible, color_pair);
         windows.push_back(window);
         return window;
     }
@@ -219,7 +228,7 @@ private:
     bool exitRequested = false;
 
     // Private constructor for singleton
-    ScreenManager(const ScreenPtr screen) : currentScreen(screen) {};
+    ScreenManager() {};
     
     // Deleted copy constructor and assignment operator
     ScreenManager(const ScreenManager&) = delete;
@@ -227,8 +236,8 @@ private:
 
 public:
     // Static method to get the singleton instance
-    static ScreenManager& getInstance(const ScreenPtr screen) {
-        static ScreenManager instance(screen);
+    static ScreenManager& getInstance() {
+        static ScreenManager instance;
         return instance;
     }
 
@@ -248,6 +257,14 @@ public:
     }
 
     void run() {
+        // Set the screen on the first run
+        if (!currentScreen && nextScreen) {
+            currentScreen = nextScreen;
+            nextScreen = nullptr;
+            screenChange = false;
+        }
+
+        // Throw if there is no screen set
         if (!currentScreen) throw std::runtime_error("ScreenManager is not initialized!");
 
         do {

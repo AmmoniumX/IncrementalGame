@@ -66,7 +66,9 @@ public:
         mainScreenClickers = putText(2, 0, "Clickers: " + clickers.to_string() + " (Speed: " + speed.to_string() + ", Prod:" + prod.to_string() + ")");
         mainScreenFactories = putText(3, 0, "Factories: " + factories.to_string());
         mainScreenInfo = putText(4, 0, "[ENTER] Click | [B] Buy | [Q] Quit");
-        buyWindow = createWindow(8, 0, COLS-1, 10, false);
+
+        // Create buy window
+        buyWindow = createWindow(8, 0, COLS-1, 9, false, YELLOW_BLACK_PAIR);
         buyWindow->putText(0, 2, "Buy Menu:");
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
         buyWindowContent.push_back(buyWindow->putText(1, 1, "[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. 10 points"));
@@ -74,16 +76,17 @@ public:
         buyWindowContent.push_back(buyWindow->putText(3, 1, "[3] Clicker Productivity: Increases points per click by 1 (currently 1). 1000 points"));
         buyWindowContent.push_back(buyWindow->putText(4, 1, "[4] Factory: Produces 1 clicker every second. 1000 points"));
         buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close"));
+
+        // Create notification text
         notifyText = putText(LINES-1, 0, "");
 
+        // Set up the tick handler
         setOnTick([this](const char input) { return this->onTick(input); });
     }
 
     static ScreenPtr create() {
         return std::make_shared<MainScreen>();
     }
-
-    // MainScreen() = delete;
 
     bool onTick(const char input) {
         // Update local variables

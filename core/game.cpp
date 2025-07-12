@@ -66,7 +66,8 @@ int run(string savefile) {
     std::cerr << "Creating mainScreen" << std::endl;
     ScreenPtr mainScreen = MainScreen::create();
     std::cerr << "Creating ScreenManager" << std::endl;
-    ScreenManager &manager = ScreenManager::getInstance(mainScreen);
+    ScreenManager &manager = ScreenManager::getInstance();
+    manager.changeScreen(mainScreen);
 
     // Main game loop
     std::cerr << "Starting game thread" << std::endl;
