@@ -71,7 +71,7 @@ public:
             }
             currentScreen->render();
             char input = getch();
-            exitRequested = currentScreen->tick(input);
+            exitRequested = currentScreen->onTick(input);
             time_t end = time(nullptr);
 
             // Calculate time to sleep

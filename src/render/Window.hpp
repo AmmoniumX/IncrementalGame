@@ -6,6 +6,7 @@
 #include <iostream>
 #include <print>
 #include <vector>
+#include <functional>
 
 #include "../setup.hpp"
 #include "./Text.hpp"
@@ -67,15 +68,15 @@ public:
     void toggle() { visible ? disable() : enable(); }
 
     void render() {
-        if (!visible) return;
-
         if (!win) {
             std::println(std::cerr, "Window is not initialized!");
             return;
         }
+        if (!visible) return;
 
-        // Draw the border
-        box(win.get(), 0, 0);
+        onTick(); // Call ticker
+
+        box(win.get(), 0, 0); // Draw the border
 
         // Render the texts
         for (const auto& text : texts) {
@@ -104,5 +105,7 @@ public:
         subwindows.push_back(subwindow);
         return subwindow;
     }
+
+    virtual void onTick() {}
 };
 typedef std::shared_ptr<Window> WindowPtr;

@@ -81,16 +81,13 @@ public:
 
         // Create notification text
         notifyText = putText(LINES-1, 0, "");
-
-        // Set up the tick handler
-        setOnTick([this](const char input) { return this->onTick(input); });
     }
 
     static ScreenPtr create() {
         return std::make_shared<MainScreen>();
     }
 
-    bool onTick(const char input) {
+    bool onTick(const char input) override {
         // Update local variables
         refreshValues();
 

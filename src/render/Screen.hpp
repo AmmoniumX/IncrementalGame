@@ -20,13 +20,8 @@ class Screen {
 private:
     std::vector<std::shared_ptr<Text>> texts; // Screen-level texts
     std::vector<std::shared_ptr<Window>> windows; // Screen-level windows
-    std::function<bool(const char)> onTick = nullptr;
 
 public:
-    void setOnTick(const std::function<bool(const char)> onTick) {
-        this->onTick = onTick;
-    }
-
     std::shared_ptr<Text> putText(int y, int x, const std::string& text, int color_pair=0) {
         auto textObj = std::make_shared<Text>(y, x, text, color_pair);
         texts.push_back(textObj);
@@ -50,12 +45,8 @@ public:
         refresh();
     }
 
-    bool tick(char input) {
-        // Return true if exit is requested
-        if (onTick) {
-            return onTick(input);
-        }
-        return false;
+    virtual bool onTick([[maybe_unused]] const char input) {
+        return false; // Default behavior: continue the game loop
     }
 };
 typedef std::shared_ptr<Screen> ScreenPtr;
