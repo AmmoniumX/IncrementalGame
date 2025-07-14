@@ -55,18 +55,19 @@ public:
     // Register a new resource type
     void addResource(const std::string& resourceId, std::shared_ptr<Resource> resource) {
         std::lock_guard<std::mutex> lock(mtx_resources);
-        resources[resourceId] = resource;
+        resources.insert_or_assign(resourceId, resource);
     }
     
     // Get a resource by ID
     template <typename T>
     std::shared_ptr<T> getResource(const std::string& resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
-        auto resource = resources[resourceId];
-        if (resource) {
-            return std::dynamic_pointer_cast<T>(resource);
+        auto it = resources.find(resourceId);
+        if (it == resources.end()) {
+            return nullptr;
+        } else {
+            return std::dynamic_pointer_cast<T>(it->second);
         }
-        return nullptr;
     }
     
     // Serialize all resources into a nested JSON structure
@@ -93,8 +94,11 @@ public:
             json resources_j = j.at("resources");
             // For each resource in the JSON, deserialize it and store it
             for (const auto& [id, data] : resources_j.items()) {
-                auto resource = getResource<Resource>(id);
-                if (resource) {
+                auto it = resources.find(id);
+                if (it == resources.end()) {
+                    std::println(std::cerr, "Resource with ID '{}' not found in registry. Skipping deserialization.", id);
+                } else {
+                    auto resource = std::dynamic_pointer_cast<Resource>(it->second);
                     resource->deserialize(data);
                 }
             }
