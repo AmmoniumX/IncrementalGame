@@ -9,14 +9,12 @@ CXXFLAGS = -Wall -Wextra -Werror -I/usr/include -std=$(CPPSTD) -fno-trapping-mat
 LDFLAGS = -lncurses
 
 # Source and Header Files
-CORE_HDRS = $(wildcard core/*.hpp)
-RENDER_HDRS = $(wildcard core/render/*.hpp)
-SCREENS_HDRS = $(wildcard screens/*.hpp)
-RESOURCES_HDRS = $(wildcard resources/*.hpp)
+CORE_HDRS = $(wildcard src/*.hpp)
+RENDER_HDRS = $(wildcard src/render/*.hpp)
+SCREENS_HDRS = $(wildcard src/screens/*.hpp)
+RESOURCES_HDRS = $(wildcard src/resources/*.hpp)
 HDRS = $(CORE_HDRS) $(RENDER_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
-
-CORE_SRCS = $(wildcard core/*.cpp)
-SRCS = $(CORE_SRCS)
+SRCS = $(wildcard src/*.cpp)
 
 # Default: build release
 all: release

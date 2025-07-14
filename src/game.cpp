@@ -13,9 +13,9 @@
 #include "./render/Window.hpp"
 #include "./render/Screen.hpp"
 #include "./render/ScreenManager.hpp"
-#include "../screens/MainScreen.hpp"
-#include "../resources/Clicker.hpp"
-#include "../resources/Factory.hpp"
+#include "./screens/MainScreen.hpp"
+#include "./resources/Clicker.hpp"
+#include "./resources/Factory.hpp"
 
 using std::cout, std::endl;
 using nlohmann::json;

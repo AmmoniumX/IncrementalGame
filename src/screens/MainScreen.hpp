@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../core/game.hpp"
-#include "../core/resourceRegistry.hpp"
-#include "../core/render/Text.hpp"
-#include "../core/render/Window.hpp"
-#include "../core/render/Screen.hpp"
+#include "../game.hpp"
+#include "../resourceRegistry.hpp"
+#include "../render/Text.hpp"
+#include "../render/Window.hpp"
+#include "../render/Screen.hpp"
 #include "../resources/Clicker.hpp"
 #include "../resources/Factory.hpp"
 #include <sstream>

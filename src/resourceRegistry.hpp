@@ -6,8 +6,8 @@
 #include <memory>
 #include <mutex>
 
-#include "../core/json.hpp"
-#include "../core/BigNum.hpp"
+#include "./json.hpp"
+#include "./BigNum.hpp"
 
 using nlohmann::json;
 
