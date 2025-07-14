@@ -8,7 +8,7 @@
 
 class Factory : public RegisteredResource<Factory> {
 private:
-    std::shared_ptr<Clicker> clicker;
+    ResourcePtr clicker;
     const uint TICK_INTERVAL = 30;
     BigNum count = N(0);
 
@@ -16,7 +16,7 @@ public:
     static constexpr const char* RESOURCE_ID = "factory";
     Factory() {
         std::cerr << "Instantiating Factory" << std::endl;
-        clicker = ResourceRegistry.getResource<Clicker>(Clicker::RESOURCE_ID);
+        clicker = ResourceRegistry.getResource(Clicker::RESOURCE_ID);
     }
     
     static std::shared_ptr<Factory> getInstance() {
@@ -56,7 +56,7 @@ public:
     virtual void onTick(const uint &gameTick) override {
         // Process factories
         if (gameTick % TICK_INTERVAL == 0) {
-            clicker->addCount(getCount());
+            (std::dynamic_pointer_cast<Clicker>(*(clicker->synchronize())))->addCount(getCount());
         }
     }
 

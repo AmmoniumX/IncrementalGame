@@ -10,7 +10,7 @@ private:
     BigNum count = N(0);
     BigNum speed = N(1);
     BigNum prod = N(1);
-    std::shared_ptr<Points> points;
+    ResourcePtr points;
 
 public:
     static constexpr const char* RESOURCE_ID = "clicker";
@@ -18,7 +18,7 @@ public:
 
     Clicker() {
         std::cerr << "Instantiating Clicker" << std::endl;
-        points = ResourceRegistry.getResource<Points>(Points::RESOURCE_ID);
+        points = ResourceRegistry.getResource(Points::RESOURCE_ID);
     }
     
     static std::shared_ptr<Clicker> getInstance() {
@@ -95,7 +95,7 @@ public:
         const int speed_bonus = speed.to_number().value_or(1) - 1;
         const int clicker_freq_ticks = std::max(static_cast<int>(GAME_TICK_SPEED - 3*speed_bonus), 1);
         if (gameTick % clicker_freq_ticks == 0) { 
-            points->addPoints(count * prod);
+            (std::dynamic_pointer_cast<Points>(*(points->synchronize())))->addPoints(count * prod);
         }
     }
 

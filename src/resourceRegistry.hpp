@@ -28,12 +28,11 @@ protected:
     Resource() = default;
 };
 
+using ThreadSafeResource = boost::synchronized_value<std::shared_ptr<Resource>>;
+using ResourcePtr = std::shared_ptr<ThreadSafeResource>; // This holds a shared_ptr to the synchronized value
 class _ResourceRegistry {
 private:
     _ResourceRegistry() = default;
-
-    using ThreadSafeResource = boost::synchronized_value<std::shared_ptr<Resource>>;
-    using ResourcePtr = std::shared_ptr<ThreadSafeResource>;
 
     std::unordered_map<std::string, ResourcePtr> resources;
     std::mutex mtx_resources;
@@ -59,14 +58,19 @@ public:
         resources.insert_or_assign(id, std::move(resource));
     }
 
-    template <typename T = Resource>
-    std::shared_ptr<T> getResource(const std::string& resourceId) {
+    // This returns a shared_ptr to the boost::synchronized_value wrapper.
+    // The template parameter T is used for type checking at compile time, but the
+    // actual type held by boost::synchronized_value is always shared_ptr<Resource>.
+    std::shared_ptr<ThreadSafeResource> getResource(const std::string& resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         auto it = resources.find(resourceId);
-        if (it == resources.end()) return nullptr;
+        if (it == resources.end()) {
+            return nullptr;
+        }
 
-        auto locked = it->second->synchronize();
-        return std::dynamic_pointer_cast<T>(*locked); // Cast from shared_ptr<Resource> to T
+        // We return the shared_ptr to the ThreadSafeResource.
+        // The caller will then call synchronize() on this returned object.
+        return it->second;
     }
 
     json serialize() {

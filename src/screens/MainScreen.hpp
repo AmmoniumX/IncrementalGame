@@ -26,9 +26,9 @@ private:
     std::vector<TextPtr> buyWindowContent;
 
     // Local variable copies
-    std::shared_ptr<Points> pointsResource;
-    std::shared_ptr<Clicker> clicker;
-    std::shared_ptr<Factory> factory;
+    ResourcePtr pointsResource;
+    ResourcePtr clickerResource;
+    ResourcePtr factoryResource;
     BigNum points;
     BigNum clickers;
     BigNum speed;
@@ -46,7 +46,11 @@ private:
     }
 
     void refreshValues() {
-        points = pointsResource->getPoints();
+        points = std::dynamic_pointer_cast<Points>(*(pointsResource->synchronize()))->getPoints();
+        auto clickerLocked = clickerResource->synchronize();
+        std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+        auto factoryLocked = factoryResource->synchronize();
+        std::shared_ptr<Factory> factory = std::dynamic_pointer_cast<Factory>(*factoryLocked);
         clickers = clicker->getCount();
         speed = clicker->getSpeed();
         prod = clicker->getProd();
@@ -58,9 +62,9 @@ public:
     MainScreen() : Screen() {
 
         // Get resources
-        pointsResource = ResourceRegistry.getResource<Points>(Points::RESOURCE_ID);
-        clicker = ResourceRegistry.getResource<Clicker>(Clicker::RESOURCE_ID);
-        factory = ResourceRegistry.getResource<Factory>(Factory::RESOURCE_ID);
+        pointsResource = ResourceRegistry.getResource(Points::RESOURCE_ID);
+        clickerResource = ResourceRegistry.getResource(Clicker::RESOURCE_ID);
+        factoryResource = ResourceRegistry.getResource(Factory::RESOURCE_ID);
         
         // Get initial values
         refreshValues();
@@ -104,65 +108,99 @@ public:
         mainScreenFactories->setText("Factories: " + factories.to_string());
         std::stringstream spc_ss; spc_ss << std::fixed << std::setprecision(1) << clicker_spc;
 
-        clicker_cost = clicker->getCost();
-        buyWindowContent[0]->setText("[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. "+clicker_cost.to_string()+" points");
-        clicker_speed_cost = clicker->getSpeedCost();
-        buyWindowContent[1]->setText("[2] Clicker Speed: Speeds up clicker speed by 0.1s. Max 10 levels. "+clicker_speed_cost.to_string()+" points");
-        clicker_prod_cost = clicker->getProdCost();
-        buyWindowContent[2]->setText("[3] Clicker Productivity: Increases points per click by 1 (currently "+prod.to_string()+"). "+clicker_prod_cost.to_string()+" points");
-        factory_cost = factory->getCost();
-        buyWindowContent[3]->setText("[4] Factory: Produces 1 clicker every second. "+factory_cost.to_string()+" points");
+        {
+            auto clickerLocked = clickerResource->synchronize();
+            std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+            auto factoryLocked = factoryResource->synchronize();
+            std::shared_ptr<Factory> factory = std::dynamic_pointer_cast<Factory>(*factoryLocked);
+            clicker_cost = clicker->getCost();
+            buyWindowContent[0]->setText("[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. "+clicker_cost.to_string()+" points");
+            clicker_speed_cost = clicker->getSpeedCost();
+            buyWindowContent[1]->setText("[2] Clicker Speed: Speeds up clicker speed by 0.1s. Max 10 levels. "+clicker_speed_cost.to_string()+" points");
+            clicker_prod_cost = clicker->getProdCost();
+            buyWindowContent[2]->setText("[3] Clicker Productivity: Increases points per click by 1 (currently "+prod.to_string()+"). "+clicker_prod_cost.to_string()+" points");
+            factory_cost = factory->getCost();
+            buyWindowContent[3]->setText("[4] Factory: Produces 1 clicker every second. "+factory_cost.to_string()+" points");
+        }
 
         // Handle input
         switch (input) {
             case 'q':
                 return true;
             case '\n':
-                pointsResource->addPoints(N(1));
+                (std::dynamic_pointer_cast<Points>(*(pointsResource->synchronize())))->addPoints(N(1));
                 return false;
             case 'b':
                 buyWindow->toggle();
                 return false;
             case '1':
                 if (!buyWindow->isVisible()) return false;
-                points = pointsResource->getPoints();
-                clicker_cost = clicker->getCost();
-                if (points >= clicker_cost) {
-                    clicker->addCount(N(1));
-                    points -= clicker_cost;
-                    pointsResource->setPoints(points);
-                } else {
-                    notify("Not enough points to buy clicker! (Need "+clicker_cost.to_string()+")");
+                {
+                    auto pointsLocked = pointsResource->synchronize();
+                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    auto clickerLocked = clickerResource->synchronize();
+                    std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+
+                    points = p->getPoints();
+                    clicker_cost = clicker->getCost();
+                    if (points >= clicker_cost) {
+                        clicker->addCount(N(1));
+                        points -= clicker_cost;
+                        p->setPoints(points);
+                    } else {
+                        notify("Not enough points to buy clicker! (Need "+clicker_cost.to_string()+")");
+                    }
                 }
                 return false;
             case '2':
                 if (!buyWindow->isVisible()) return false;
-                points = pointsResource->getPoints();
-                clicker_speed_cost = clicker->getSpeedCost();
-                if (points < clicker_speed_cost) { notify("Not enough points to buy clicker speed! (Need 100)"); return false; }
-                if (speed >= Clicker::MAX_SPEED) { notify("Max speed reached!"); return false; }
-                clicker->addSpeed(N(1));
-                points -= clicker_speed_cost;
-                pointsResource->setPoints(points);
+                {
+                    auto pointsLocked = pointsResource->synchronize();
+                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    auto clickerLocked = clickerResource->synchronize();
+                    std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+
+                    points = p->getPoints();
+                    clicker_speed_cost = clicker->getSpeedCost();
+                    if (points < clicker_speed_cost) { notify("Not enough points to buy clicker speed! (Need 100)"); }
+                    if (speed >= Clicker::MAX_SPEED) { notify("Max speed reached!"); }
+                    clicker->addSpeed(N(1));
+                    points -= clicker_speed_cost;
+                    p->setPoints(points);
+                }
                 return false;
             case '3':
                 if (!buyWindow->isVisible()) return false;
-                points = pointsResource->getPoints();
-                clicker_prod_cost = clicker->getProdCost();
-                if (points < 1000) { notify("Not enough points to buy clicker productivity! (Need 1000)"); return false; }
-                clicker->addProd(N(1));
-                points -= clicker_prod_cost;
-                pointsResource->setPoints(points);
+                {
+                    auto pointsLocked = pointsResource->synchronize();
+                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    auto clickerLocked = clickerResource->synchronize();
+                    std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+
+                    points = p->getPoints();
+                    clicker_prod_cost = clicker->getProdCost();
+                    if (points < 1000) { notify("Not enough points to buy clicker productivity! (Need 1000)"); return false; }
+                    clicker->addProd(N(1));
+                    points -= clicker_prod_cost;
+                    p->setPoints(points);
+                }
                 return false;
             case '4':
                 if (!buyWindow->isVisible()) return false;
-                points = pointsResource->getPoints();
-                if (points >= factory_cost) {
-                    factory->addCount(N(1));
-                    points -= factory_cost;
-                    pointsResource->setPoints(points);
-                } else {
-                    notify("Not enough points to buy factory! (Need "+factory_cost.to_string()+")");
+                {
+                    auto pointsLocked = pointsResource->synchronize();
+                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    auto factoryLocked = factoryResource->synchronize();
+                    std::shared_ptr<Factory> factory = std::dynamic_pointer_cast<Factory>(*factoryLocked);
+
+                    points = p->getPoints();
+                    if (points >= factory_cost) {
+                        factory->addCount(N(1));
+                        points -= factory_cost;
+                        p->setPoints(points);
+                    } else {
+                        notify("Not enough points to buy factory! (Need "+factory_cost.to_string()+")");
+                    }
                 }
                 return false;
             case -1:
