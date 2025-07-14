@@ -8,8 +8,11 @@
 #include <atomic>
 #include <print>
 
+#include "setup.hpp"
 #include "game.hpp"
-#include "render.hpp"
+#include "./render/Window.hpp"
+#include "./render/Screen.hpp"
+#include "./render/ScreenManager.hpp"
 #include "../screens/MainScreen.hpp"
 #include "../resources/Clicker.hpp"
 #include "../resources/Factory.hpp"

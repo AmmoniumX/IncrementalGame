@@ -2,7 +2,9 @@
 
 #include "../core/game.hpp"
 #include "../core/resourceRegistry.hpp"
-#include "../core/render.hpp"
+#include "../core/render/Text.hpp"
+#include "../core/render/Window.hpp"
+#include "../core/render/Screen.hpp"
 #include "../resources/Clicker.hpp"
 #include "../resources/Factory.hpp"
 #include <sstream>

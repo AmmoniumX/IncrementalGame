@@ -10,14 +10,13 @@ LDFLAGS = -lncurses
 
 # Source and Header Files
 CORE_HDRS = $(wildcard core/*.hpp)
+RENDER_HDRS = $(wildcard core/render/*.hpp)
 SCREENS_HDRS = $(wildcard screens/*.hpp)
 RESOURCES_HDRS = $(wildcard resources/*.hpp)
-HDRS = $(CORE_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
+HDRS = $(CORE_HDRS) $(RENDER_HDRS) $(SCREENS_HDRS) $(RESOURCES_HDRS)
 
 CORE_SRCS = $(wildcard core/*.cpp)
-SCREENS_SRCS = $(wildcard screens/*.cpp)
-RESOURCES_SRCS = $(wildcard resources/*.cpp)
-SRCS = $(CORE_SRCS) $(SCREENS_SRCS) $(RESOURCES_SRCS)
+SRCS = $(CORE_SRCS)
 
 # Default: build release
 all: release
