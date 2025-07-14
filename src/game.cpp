@@ -20,9 +20,6 @@
 using std::cout, std::endl;
 using nlohmann::json;
 
-// Initialize extern variables
-_ResourceRegistry& ResourceRegistry = _ResourceRegistry::getInstance();
-
 namespace {
     // Private game variables
     uint tick = 0;

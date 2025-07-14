@@ -5,6 +5,7 @@
 #include <unordered_map>
 #include <memory>
 #include <mutex>
+#include <boost/thread/synchronized_value.hpp>
 
 #include "./json.hpp"
 #include "./BigNum.hpp"
@@ -13,31 +14,31 @@ using nlohmann::json;
 
 class Resource {
 public:
-    // Virtual destructor is important for proper cleanup in inheritance
     virtual ~Resource() = default;
-    
-    // Virtual functions
+
     virtual json serialize() const = 0;
     virtual void deserialize(const json& j) = 0;
     virtual std::string getId() const = 0;
-    virtual void onTick(const uint &gameTick) = 0;
-    
-    // Prevent copying and assignment
+    virtual void onTick(const uint& gameTick) = 0;
+
     Resource(const Resource&) = delete;
     Resource& operator=(const Resource&) = delete;
-    
+
 protected:
-    // Protected constructor prevents direct instantiation
-    Resource() {};
+    Resource() = default;
 };
-    
+
 class _ResourceRegistry {
 private:
     _ResourceRegistry() = default;
-    std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
+
+    using ThreadSafeResource = boost::synchronized_value<std::shared_ptr<Resource>>;
+    using ResourcePtr = std::shared_ptr<ThreadSafeResource>;
+
+    std::unordered_map<std::string, ResourcePtr> resources;
     std::mutex mtx_resources;
+
 public:
-    // Singleton access
     static _ResourceRegistry& getInstance() {
         static _ResourceRegistry instance;
         return instance;
@@ -46,93 +47,86 @@ public:
     std::unordered_set<std::string> getResourceIds() {
         std::lock_guard<std::mutex> lock(mtx_resources);
         std::unordered_set<std::string> result;
-        for (const auto& [id, resource] : resources) {
+        for (const auto& [id, _] : resources) {
             result.insert(id);
         }
         return result;
     }
-    
-    // Register a new resource type
-    void addResource(const std::string& resourceId, std::shared_ptr<Resource> resource) {
+
+    void addResource(const std::string& id, std::shared_ptr<Resource>&& moved_resource) {
         std::lock_guard<std::mutex> lock(mtx_resources);
-        resources.insert_or_assign(resourceId, resource);
+        auto resource = std::make_shared<ThreadSafeResource>(std::shared_ptr<Resource>(std::move(moved_resource)));
+        resources.insert_or_assign(id, std::move(resource));
     }
-    
-    // Get a resource by ID
-    template <typename T>
+
+    template <typename T = Resource>
     std::shared_ptr<T> getResource(const std::string& resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         auto it = resources.find(resourceId);
-        if (it == resources.end()) {
-            return nullptr;
-        } else {
-            return std::dynamic_pointer_cast<T>(it->second);
-        }
+        if (it == resources.end()) return nullptr;
+
+        auto locked = it->second->synchronize();
+        return std::dynamic_pointer_cast<T>(*locked); // Cast from shared_ptr<Resource> to T
     }
-    
-    // Serialize all resources into a nested JSON structure
+
     json serialize() {
-        std::lock_guard<std::mutex> lock_resources(mtx_resources);
-        
-        json resources_j = json::object({});
-        // For each resource, serialize it and add to the result
-        for (const auto& [id, resource] : resources) {
-            resources_j[id] = resource->serialize();
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        json result = json::object();
+
+        for (const auto& [id, resPtr] : resources) {
+            auto locked = resPtr->synchronize();
+            result[id] = (*locked)->serialize();
         }
-        
-        // Return resources
-        return json{
-            {"resources", resources_j}
-        };
+
+        return json{{"resources", result}};
     }
-    
-    // Deserialize resources from a nested JSON structure
+
     void deserialize(const json& j) {
+        if (!j.contains("resources")) return;
 
-        // Deserialize resources
-        if (j.contains("resources")) {
-            json resources_j = j.at("resources");
-            // For each resource in the JSON, deserialize it and store it
-            for (const auto& [id, data] : resources_j.items()) {
-                auto it = resources.find(id);
-                if (it == resources.end()) {
-                    std::println(std::cerr, "Resource with ID '{}' not found in registry. Skipping deserialization.", id);
-                } else {
-                    auto resource = std::dynamic_pointer_cast<Resource>(it->second);
-                    resource->deserialize(data);
-                }
+        const auto& res_json = j.at("resources");
+        std::lock_guard<std::mutex> lock(mtx_resources);
+
+        for (const auto& [id, data] : res_json.items()) {
+            auto it = resources.find(id);
+            if (it == resources.end()) {
+                std::cerr << "Resource with ID '" << id << "' not found in registry. Skipping deserialization.\n";
+                continue;
             }
+
+            auto locked = it->second->synchronize();
+            (*locked)->deserialize(data);
         }
     }
 
-    void onTick(const uint &gameTick) {
-        // std::lock_guard<std::mutex> lock(mtx_resources);
-        for (const auto& [id, resource] : resources) {
-            resource->onTick(gameTick);
+    void onTick(const uint& gameTick) {
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        for (const auto& [_, resPtr] : resources) {
+            auto locked = resPtr->synchronize();
+            (*locked)->onTick(gameTick);
         }
     }
 };
 
-extern _ResourceRegistry& ResourceRegistry;
+// Inline definition of global instance
+inline _ResourceRegistry& ResourceRegistry = _ResourceRegistry::getInstance();
 
 // CRTP helper for automatic registration
 template <typename Derived>
 class RegisteredResource : public Resource {
 public:
-    // Implementation of getId() using the CRTP pattern
     std::string getId() const override {
         return Derived::RESOURCE_ID;
     }
-    
+
 protected:
     RegisteredResource() = default;
-    
-    // Register the resource when used for the first time
+
     static void registerResource() {
         static bool registered = false;
         if (!registered) {
             registered = true;
-            _ResourceRegistry::getInstance().addResource(
+            ResourceRegistry.addResource(
                 Derived::RESOURCE_ID,
                 Derived::getInstance()
             );
