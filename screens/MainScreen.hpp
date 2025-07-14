@@ -75,7 +75,7 @@ public:
         buyWindowContent.push_back(buyWindow->putText(2, 1, "[2] Clicker Speed: Speeds up clicker speed by 0.1s. Max 10 levels. 100 points"));
         buyWindowContent.push_back(buyWindow->putText(3, 1, "[3] Clicker Productivity: Increases points per click by 1 (currently 1). 1000 points"));
         buyWindowContent.push_back(buyWindow->putText(4, 1, "[4] Factory: Produces 1 clicker every second. 1000 points"));
-        buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close", GAME_COLORS::WHITE_BLACK));
+        buyWindowContent.push_back(buyWindow->putText(7, 1, "[B] Close", GAME_COLORS::GRAY_BLACK));
 
         // Create notification text
         notifyText = putText(LINES-1, 0, "");
@@ -167,7 +167,6 @@ public:
                 return false;
             default:
                 notify(std::string("Unknown command: ")+input+" ("+std::to_string(static_cast<int>(input))+")");
-                std::cerr << "Unknown command: " << input << " (" << static_cast<int>(input) << ")" << std::endl;
                 return false;
         }
     }

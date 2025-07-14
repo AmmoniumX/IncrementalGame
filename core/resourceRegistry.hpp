@@ -26,9 +26,7 @@ public:
     
 protected:
     // Protected constructor prevents direct instantiation
-    Resource() {
-        std::cerr << "Instantiating ResourceRegistry" << std::endl;
-    };
+    Resource() {};
 };
     
 class _ResourceRegistry {
@@ -100,7 +98,6 @@ public:
         json resources_j = json::object({});
         // For each resource, serialize it and add to the result
         for (const auto& [id, resource] : resources) {
-            std::cerr << "Serializing resource " << id << std::endl;
             resources_j[id] = resource->serialize();
         }
         
@@ -128,7 +125,6 @@ public:
             json resources_j = j.at("resources");
             // For each resource in the JSON, deserialize it and store it
             for (const auto& [id, data] : resources_j.items()) {
-                std::cerr << "Deserializing resource " << id << std::endl;
                 auto resource = getResource<Resource>(id);
                 if (resource) {
                     resource->deserialize(data);
@@ -163,7 +159,6 @@ protected:
     static void registerResource() {
         static bool registered = false;
         if (!registered) {
-            std::cerr << "Registering resource " << Derived::RESOURCE_ID << std::endl;
             registered = true;
             _ResourceRegistry::getInstance().addResource(
                 Derived::RESOURCE_ID,

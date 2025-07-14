@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <ctime>
+#include <print>
 
 // Constants
 constexpr uint FRAME_RATE = 30;
@@ -17,22 +18,42 @@ namespace GAME_COLORS {
     constexpr int YELLOW_BLACK = 1; // Yellow on black
     constexpr int RED_BLACK = 2; // Red on black
     constexpr int WHITE_BLACK = 3; // White on black
+    constexpr int GRAY_BLACK = 4; // Gray on black
 }
 
 // Ncurses setup
 void setupNcurses() {
+
     initscr();              // Initialize ncurses mode
+    
+    // Check terminal color support
+    if (has_colors()) {
+        start_color(); // Start color functionality
+        use_default_colors();   // Use default terminal colors
+    }
+
+    if (!has_colors() || COLORS < 256) {
+        std::println(std::cerr, "This terminal does not support 256-bit colors! ({})", COLORS);
+        endwin();
+        exit(EXIT_FAILURE);
+    }
+
     cbreak();               // Disable line buffering
     noecho();               // Disable echoing of typed characters
     nodelay(stdscr, TRUE);  // Make getch non-blocking
     keypad(stdscr, TRUE);   // Enable special keys
-    start_color();          // Enable color functionality
     curs_set(0);            // Hide the cursor
 
+    // Show supported colors
+    std::println(std::cerr, "Supported colors: {}", COLORS);
+    std::println(std::cerr, "Supported color pairs: {}", COLOR_PAIRS);
+
     // Initialize color pairs
+    init_pair(GAME_COLORS::DEFAULT, COLOR_WHITE, -1); // -1 for default background
     init_pair(GAME_COLORS::YELLOW_BLACK, COLOR_YELLOW, COLOR_BLACK);
     init_pair(GAME_COLORS::RED_BLACK, COLOR_RED, COLOR_BLACK);
     init_pair(GAME_COLORS::WHITE_BLACK, COLOR_WHITE, COLOR_BLACK);
+    init_pair(GAME_COLORS::GRAY_BLACK, 244, COLOR_BLACK); // Gray on black
 }
 
 /*
@@ -79,7 +100,7 @@ public:
 
     void setColorPair(int pair) { 
         if (pair < 0) {
-            std::cerr << "Invalid color pair: " << pair << std::endl;
+            std::println(std::cerr, "Invalid color pair: {}", pair);
             return;
         }
         color_pair = pair; 
@@ -141,12 +162,14 @@ class Window {
 private:
     std::shared_ptr<WINDOW> win;
     std::vector<std::shared_ptr<Text>> texts; // Window-level texts
+    std::vector<std::shared_ptr<Window>> subwindows; // Subwindows within this window
     int x, y, width, height;
     bool visible;
     int color_pair;
+    std::shared_ptr<WINDOW> parentWin;
 public:
-    Window(int x, int y, int width, int height, bool visible, int color_pair=0) 
-    : x(x), y(y), width(width), height(height), visible(visible), color_pair(color_pair) {
+    Window(int x, int y, int width, int height, bool visible, int color_pair=0, std::shared_ptr<WINDOW> parentWin=nullptr) 
+    : x(x), y(y), width(width), height(height), visible(visible), color_pair(color_pair), parentWin(parentWin) {
         win = std::shared_ptr<WINDOW>(newwin(height, width, y, x), [](WINDOW* w) { delwin(w); });
 
         if (color_pair > 0) {
@@ -156,9 +179,16 @@ public:
 
     bool isVisible() const { return visible; }
     void clearWindow() {
+        // Temporarily set window color to the parent window's color
+        if (parentWin) {
+            wbkgd(win.get(), getbkgd(parentWin.get()));
+        } else {
+            wbkgd(win.get(), COLOR_PAIR(GAME_COLORS::DEFAULT)); // Default background
+        }
         werase(win.get()); // Clear the window
         wrefresh(win.get()); // Refresh to apply changes
-
+        // Restore the original color
+        wbkgd(win.get(), COLOR_PAIR(color_pair));
         // Overwrite the text with spaces
         for (const auto& text : texts) {
             text->clear();
@@ -177,7 +207,7 @@ public:
         if (!visible) return;
 
         if (!win) {
-            std::cerr << "Window is not initialized!" << std::endl;
+            std::println(std::cerr, "Window is not initialized!");
             return;
         }
 
@@ -189,6 +219,11 @@ public:
             text->render();
         }
 
+        // Render subwindows
+        for (const auto& subwindow : subwindows) {
+            subwindow->render();
+        }
+
         // Refresh the window
         wrefresh(win.get());
     }
@@ -197,6 +232,14 @@ public:
         auto textObj = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
         texts.push_back(textObj);
         return textObj;
+    }
+
+    std::shared_ptr<Window> createSubwindow(int subY, int subX, int subWidth, int subHeight, 
+        bool visible=true, int color_pair=0) {
+
+        auto subwindow = std::make_shared<Window>(subX, subY, subWidth, subHeight, visible, color_pair, win);
+        subwindows.push_back(subwindow);
+        return subwindow;
     }
 };
 typedef std::shared_ptr<Window> WindowPtr;

@@ -1,8 +1,9 @@
 # Compiler
 CXX = g++
+CPPSTD = gnu++26 # Recommended: gnu++26, minimum: c++23
 
 # Common Flags
-CXXFLAGS = -Wall -Wextra -Werror -I/usr/include -std=c++26 -fno-trapping-math -march=native
+CXXFLAGS = -Wall -Wextra -Werror -I/usr/include -std=$(CPPSTD) -fno-trapping-math -march=native
 
 # Libraries
 LDFLAGS = -lncurses

@@ -6,6 +6,7 @@
 #include <thread>
 #include <ctime>
 #include <atomic>
+#include <print>
 
 #include "game.hpp"
 #include "render.hpp"
@@ -49,7 +50,7 @@ void gameWorker() {
 int run(string savefile) {
 
     // Initialize resoruces
-    std::cerr << "Creating resources" << std::endl;
+    std::println(std::cerr, "Creating resources");
     (void) Clicker::getInstance();
     (void) Factory::getInstance();
 
@@ -57,29 +58,28 @@ int run(string savefile) {
     load(savefile);
 
     // Initialize ncurses
-    std::cerr << "Setting up ncurses" << std::endl;
+    std::println(std::cerr, "Setting up ncurses");
     setupNcurses();
 
     // Create and setup ScreenManager and Screen
-    std::cerr << "Creating mainScreen" << std::endl;
+    std::println(std::cerr, "Setting up ScreenManager and MainScreen");
     ScreenPtr mainScreen = MainScreen::create();
-    std::cerr << "Creating ScreenManager" << std::endl;
     ScreenManager &manager = ScreenManager::getInstance();
     manager.changeScreen(mainScreen);
 
     // Main game loop
-    std::cerr << "Starting game thread" << std::endl;
+    std::println(std::cerr, "Starting game thread");
     do_exit = false;
     std::thread gameThread([]() {
         gameWorker(); return;
     });
-    std::cerr << "Starting render loop" << std::endl;
+    std::println(std::cerr, "Starting render loop");
     manager.run();
-    std::cerr << "Render loop ended" << std::endl;
+    std::println(std::cerr, "Render loop ended");
     // Cleanup
     do_exit = true;
     gameThread.join();
-    std::cerr << "Game thread ended" << std::endl;
+    std::println(std::cerr, "Game thread ended");
     save(savefile);
 
     return 0;
@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
         if (opt == 0 && strcmp(long_options[option_index].name, "save") == 0) {
             savefile = optarg;
         } else {
-            cout << "Usage: " << argv[0] << " [--save savefile]" << endl;
+            std::println("Usage: {} [--save savefile]", argv[0]);
             return 1;
         }
     }
