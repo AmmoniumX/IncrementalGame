@@ -3,6 +3,7 @@
 #include <iostream>
 #include "../game.hpp"
 #include "../resourceRegistry.hpp"
+#include "./Points.hpp"
 #include "./Clicker.hpp"
 
 class Factory : public RegisteredResource<Factory> {

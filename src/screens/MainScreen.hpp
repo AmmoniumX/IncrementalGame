@@ -5,6 +5,7 @@
 #include "../render/Text.hpp"
 #include "../render/Window.hpp"
 #include "../render/Screen.hpp"
+#include "../resources/Points.hpp"
 #include "../resources/Clicker.hpp"
 #include "../resources/Factory.hpp"
 #include <sstream>
@@ -25,6 +26,7 @@ private:
     std::vector<TextPtr> buyWindowContent;
 
     // Local variable copies
+    std::shared_ptr<Points> pointsResource;
     std::shared_ptr<Clicker> clicker;
     std::shared_ptr<Factory> factory;
     BigNum points;
@@ -44,7 +46,7 @@ private:
     }
 
     void refreshValues() {
-        points = ResourceRegistry.getPoints();
+        points = pointsResource->getPoints();
         clickers = clicker->getCount();
         speed = clicker->getSpeed();
         prod = clicker->getProd();
@@ -56,6 +58,7 @@ public:
     MainScreen() : Screen() {
 
         // Get resources
+        pointsResource = ResourceRegistry.getResource<Points>(Points::RESOURCE_ID);
         clicker = ResourceRegistry.getResource<Clicker>(Clicker::RESOURCE_ID);
         factory = ResourceRegistry.getResource<Factory>(Factory::RESOURCE_ID);
         
@@ -115,49 +118,49 @@ public:
             case 'q':
                 return true;
             case '\n':
-                ResourceRegistry.addPoints(N(1));
+                pointsResource->addPoints(N(1));
                 return false;
             case 'b':
                 buyWindow->toggle();
                 return false;
             case '1':
                 if (!buyWindow->isVisible()) return false;
-                points = ResourceRegistry.getPoints();
+                points = pointsResource->getPoints();
                 clicker_cost = clicker->getCost();
                 if (points >= clicker_cost) {
                     clicker->addCount(N(1));
                     points -= clicker_cost;
-                    ResourceRegistry.setPoints(points);
+                    pointsResource->setPoints(points);
                 } else {
                     notify("Not enough points to buy clicker! (Need "+clicker_cost.to_string()+")");
                 }
                 return false;
             case '2':
                 if (!buyWindow->isVisible()) return false;
-                points = ResourceRegistry.getPoints();
+                points = pointsResource->getPoints();
                 clicker_speed_cost = clicker->getSpeedCost();
                 if (points < clicker_speed_cost) { notify("Not enough points to buy clicker speed! (Need 100)"); return false; }
                 if (speed >= Clicker::MAX_SPEED) { notify("Max speed reached!"); return false; }
                 clicker->addSpeed(N(1));
                 points -= clicker_speed_cost;
-                ResourceRegistry.setPoints(points);
+                pointsResource->setPoints(points);
                 return false;
             case '3':
                 if (!buyWindow->isVisible()) return false;
-                points = ResourceRegistry.getPoints();
+                points = pointsResource->getPoints();
                 clicker_prod_cost = clicker->getProdCost();
                 if (points < 1000) { notify("Not enough points to buy clicker productivity! (Need 1000)"); return false; }
                 clicker->addProd(N(1));
                 points -= clicker_prod_cost;
-                ResourceRegistry.setPoints(points);
+                pointsResource->setPoints(points);
                 return false;
             case '4':
                 if (!buyWindow->isVisible()) return false;
-                points = ResourceRegistry.getPoints();
+                points = pointsResource->getPoints();
                 if (points >= factory_cost) {
                     factory->addCount(N(1));
                     points -= factory_cost;
-                    ResourceRegistry.setPoints(points);
+                    pointsResource->setPoints(points);
                 } else {
                     notify("Not enough points to buy factory! (Need "+factory_cost.to_string()+")");
                 }

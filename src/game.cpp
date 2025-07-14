@@ -54,6 +54,7 @@ int run(string savefile) {
 
     // Initialize resoruces
     std::println(std::cerr, "Creating resources");
+    (void) Points::getInstance();
     (void) Clicker::getInstance();
     (void) Factory::getInstance();
 

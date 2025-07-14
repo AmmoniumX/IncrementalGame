@@ -33,33 +33,10 @@ protected:
     
 class _ResourceRegistry {
 private:
-    BigNum points;
-    std::mutex mtx_points;
     _ResourceRegistry() = default;
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
     std::mutex mtx_resources;
 public:
-
-    BigNum getPoints() {
-        std::lock_guard<std::mutex> lock(mtx_points);
-        return points;
-    }
-
-    void setPoints(const BigNum& amount) {
-        std::lock_guard<std::mutex> lock(mtx_points);
-        points = amount;
-    }
-
-    void addPoints(const BigNum& amount) {
-        std::lock_guard<std::mutex> lock(mtx_points);
-        points += amount;
-    }
-
-    void subPoints(const BigNum& amount) {
-        std::lock_guard<std::mutex> lock(mtx_points);
-        points -= amount;
-    }
-
     // Singleton access
     static _ResourceRegistry& getInstance() {
         static _ResourceRegistry instance;
@@ -94,7 +71,6 @@ public:
     
     // Serialize all resources into a nested JSON structure
     json serialize() {
-        std::lock_guard<std::mutex> lock_points(mtx_points);
         std::lock_guard<std::mutex> lock_resources(mtx_resources);
         
         json resources_j = json::object({});
@@ -103,24 +79,14 @@ public:
             resources_j[id] = resource->serialize();
         }
         
-        // Return both points and resources
+        // Return resources
         return json{
-            {"points", points.to_string()},
             {"resources", resources_j}
         };
     }
     
     // Deserialize resources from a nested JSON structure
     void deserialize(const json& j) {
-        
-        { // Deserialize points
-            std::lock_guard<std::mutex> lock_points(mtx_points);
-
-            // Deserialize points
-            if (j.contains("points")) {
-                points = BigNum(j["points"].get<std::string>());
-            }
-        }
 
         // Deserialize resources
         if (j.contains("resources")) {
