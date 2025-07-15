@@ -29,7 +29,7 @@ protected:
     Resource() = default;
 };
 
-using ResourcePtr = std::shared_ptr<boost::synchronized_value<Resource*>>;
+using ResourcePtr = boost::synchronized_value<Resource*>*;
 class _ResourceRegistry {
 private:
     _ResourceRegistry() = default;
@@ -38,7 +38,7 @@ private:
     std::unordered_map<std::string, std::unique_ptr<Resource>> owned_resources;
 
     // Container of shared pointers to resources, allowing thread-safe access
-    std::unordered_map<std::string, ResourcePtr> resources;
+    std::unordered_map<std::string, std::unique_ptr<boost::synchronized_value<Resource*>>> owned_synchronized_resources;
 
     // Mutex for synchronizing access to the resources
     std::mutex mtx_resources;
@@ -52,7 +52,7 @@ public:
     std::unordered_set<std::string> getResourceIds() {
         std::lock_guard<std::mutex> lock(mtx_resources);
         std::unordered_set<std::string> result;
-        for (const auto& [id, _] : resources) {
+        for (const auto& [id, _] : owned_synchronized_resources) {
             result.insert(id);
         }
         return result;
@@ -61,8 +61,8 @@ public:
     void addResource(const std::string& id, std::unique_ptr<Resource>&& moved_resource) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         owned_resources.insert_or_assign(id, std::move(moved_resource));
-        auto resource = std::make_shared<boost::synchronized_value<Resource*>>(owned_resources[id].get());
-        resources.insert_or_assign(id, std::move(resource));
+        auto resource = std::make_unique<boost::synchronized_value<Resource*>>(owned_resources[id].get());
+        owned_synchronized_resources.insert_or_assign(id, std::move(resource));
     }
 
     // This returns a pointer to a synchronized value that contains the resource.
@@ -71,21 +71,21 @@ public:
     // ResourceRegistry itself is only destroyed at the end of the program.
     ResourcePtr getResource(const std::string& resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
-        auto it = resources.find(resourceId);
-        if (it == resources.end()) {
+        auto it = owned_synchronized_resources.find(resourceId);
+        if (it == owned_synchronized_resources.end()) {
             return nullptr;
         }
 
-        // We return the shared_ptr to the resource.
+        // We return the pointer to the resource.
         // The caller will then call synchronize() on this returned object.
-        return it->second;
+        return it->second.get();
     }
 
     json serialize() {
         std::lock_guard<std::mutex> lock(mtx_resources);
         json result = json::object();
 
-        for (const auto& [id, resPtr] : resources) {
+        for (const auto& [id, resPtr] : owned_synchronized_resources) {
             auto locked = resPtr->synchronize();
             result[id] = (*locked)->serialize();
         }
@@ -100,8 +100,8 @@ public:
         std::lock_guard<std::mutex> lock(mtx_resources);
 
         for (const auto& [id, data] : res_json.items()) {
-            auto it = resources.find(id);
-            if (it == resources.end()) {
+            auto it = owned_synchronized_resources.find(id);
+            if (it == owned_synchronized_resources.end()) {
                 std::cerr << "Resource with ID '" << id << "' not found in registry. Skipping deserialization.\n";
                 continue;
             }
@@ -113,7 +113,7 @@ public:
 
     void onTick(const uint& gameTick) {
         std::lock_guard<std::mutex> lock(mtx_resources);
-        for (const auto& [_, resPtr] : resources) {
+        for (const auto& [_, resPtr] : owned_synchronized_resources) {
             auto locked = resPtr->synchronize();
             (*locked)->onTick(gameTick);
         }
