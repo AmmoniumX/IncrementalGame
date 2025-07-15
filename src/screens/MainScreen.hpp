@@ -102,7 +102,7 @@ public:
         craftingOptions.emplace(Inventory::Items::IRON, craftingWindow->putText(1, 1, "[i]ron Ingots"));
         craftingOptions.emplace(Inventory::Items::COPPER, craftingWindow->putText(2, 1, "[c]opper Ingots"));
 
-        sidebarCraftingWindow = createWindow(5, 0, 12, 3, true, GAME_COLORS::YELLOW_BLACK);
+        sidebarCraftingWindow = createWindow(5, 0, 12, 3, true, GAME_COLORS::YELLOW_GRAY);
         (void) sidebarCraftingWindow->putText(1, 1, "[C]rafting", GAME_COLORS::DEFAULT);
         sidebarUpgradesWindow = createWindow(8, 0, 12, 3, true, GAME_COLORS::RED_BLACK);
         (void) sidebarUpgradesWindow->putText(1, 1, "[U]pgrades", GAME_COLORS::DEFAULT);
