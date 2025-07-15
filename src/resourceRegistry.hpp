@@ -44,7 +44,7 @@ private:
     std::mutex mtx_resources;
 
 public:
-    static _ResourceRegistry& getInstance() {
+    static _ResourceRegistry& create() {
         static _ResourceRegistry instance;
         return instance;
     }
@@ -121,7 +121,7 @@ public:
 };
 
 // Inline definition of global instance
-inline _ResourceRegistry& ResourceRegistry = _ResourceRegistry::getInstance();
+inline _ResourceRegistry& ResourceRegistry = _ResourceRegistry::create();
 
 // CRTP helper for automatic registration
 template <typename Derived>

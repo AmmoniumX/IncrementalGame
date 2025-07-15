@@ -31,7 +31,40 @@ private:
     bool visible;
     int color_pair;
     std::shared_ptr<WINDOW> parentWin;
+    TextPtr title = nullptr;
 public:
+    enum class Alignment {
+        LEFT,
+        CENTER,
+        RIGHT
+    };
+    
+    TextPtr setTitle(const std::string& text, Alignment alignment=Alignment::LEFT, int color_pair=0, int offset=0) {
+        if (title) {
+            title->setText(text, true);
+        } else {
+            title = putText(0, 0, text, color_pair);
+        }
+        title->setColorPair(color_pair);
+        switch (alignment) {
+            case Alignment::LEFT:
+                title->setX(1 + offset);
+                break;
+            case Alignment::CENTER: {
+                int centerX = (width - static_cast<int>(text.size())) / 2 + offset;
+                title->setX(centerX);
+                break;
+            }
+            case Alignment::RIGHT: {
+                int rightX = width - static_cast<int>(text.size()) - 1 - offset;
+                title->setX(rightX);
+                break;
+            }
+        }
+        title->setY(0);
+        return title;
+    }
+
     Window(int x, int y, int width, int height, bool visible, int color_pair=0, std::shared_ptr<WINDOW> parentWin=nullptr) 
     : x(x), y(y), width(width), height(height), visible(visible), color_pair(color_pair), parentWin(parentWin) {
         win = std::shared_ptr<WINDOW>(newwin(height, width, y, x), [](WINDOW* w) { delwin(w); });
@@ -77,6 +110,11 @@ public:
         onTick(); // Call ticker
 
         box(win.get(), 0, 0); // Draw the border
+
+        // Render the title if it exists
+        if (title) {
+            title->render();
+        }
 
         // Render the texts
         for (const auto& text : texts) {
