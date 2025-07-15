@@ -18,7 +18,23 @@ HDRS = $(CORE_HDRS) $(RENDER_HDRS) $(SCREENS_HDRS) $(WINDOWS_HDRS) $(RESOURCES_H
 SRCS = $(wildcard src/*.cpp)
 
 # Default: build release
-all: release
+# --- Release Build ---
+RELEASE_DIR = bin/release
+RELEASE_OBJ_DIR = obj/release
+RELEASE_TARGET = $(RELEASE_DIR)/game
+RELEASE_OBJS = $(patsubst %.cpp,$(RELEASE_OBJ_DIR)/%.o,$(SRCS))
+RELEASE_CXXFLAGS = $(CXXFLAGS) -O3 -fsanitize=address,undefined
+
+release: $(RELEASE_TARGET)
+
+$(RELEASE_TARGET): $(RELEASE_OBJS)
+	@mkdir -p $(RELEASE_DIR)
+	$(CXX) -o $@ $^ $(LDFLAGS) -fsanitize=address,undefined
+
+$(RELEASE_OBJ_DIR)/%.o: %.cpp $(HDRS)
+	@mkdir -p $(@D)
+	$(CXX) $(RELEASE_CXXFLAGS) -c -o $@ $<
+
 
 # --- Debug Build ---
 DEBUG_DIR = bin/debug
@@ -37,24 +53,8 @@ $(DEBUG_OBJ_DIR)/%.o: %.cpp $(HDRS)
 	@mkdir -p $(@D)
 	$(CXX) $(DEBUG_CXXFLAGS) -c -o $@ $<
 
-# --- Release Build ---
-RELEASE_DIR = bin/release
-RELEASE_OBJ_DIR = obj/release
-RELEASE_TARGET = $(RELEASE_DIR)/game
-RELEASE_OBJS = $(patsubst %.cpp,$(RELEASE_OBJ_DIR)/%.o,$(SRCS))
-RELEASE_CXXFLAGS = $(CXXFLAGS) -O3 -fsanitize=address,undefined
-
-release: $(RELEASE_TARGET)
-
-$(RELEASE_TARGET): $(RELEASE_OBJS)
-	@mkdir -p $(RELEASE_DIR)
-	$(CXX) -o $@ $^ $(LDFLAGS) -fsanitize=address,undefined
-
-$(RELEASE_OBJ_DIR)/%.o: %.cpp $(HDRS)
-	@mkdir -p $(@D)
-	$(CXX) $(RELEASE_CXXFLAGS) -c -o $@ $<
-
 # --- Phony Targets ---
+all: debug release
 clean:
 	rm -rf ./obj/ ./bin/
 
