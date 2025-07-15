@@ -13,6 +13,32 @@
 
 using nlohmann::json;
 
+
+/*
+Just a wrapper for a pointer to a resource.
+This is used to express that the pointer is non-owning, and
+Should not be deleted by the caller.
+*/
+template<typename T>
+struct observer_ptr {
+    T *const ptr = nullptr;
+
+    // Constructors
+    observer_ptr() noexcept = default;
+    observer_ptr(std::nullptr_t) noexcept : ptr(nullptr) {}
+    explicit observer_ptr(T* p) noexcept : ptr(p) {}
+
+    // Observers
+    T* get() const noexcept { return ptr; }
+    T& operator*() const noexcept { return *ptr; }
+    T* operator->() const noexcept { return ptr; }
+    explicit operator bool() const noexcept { return ptr != nullptr; }
+
+    // Implicit conversion to T*
+    operator T*() const noexcept { return ptr; }
+};
+
+
 class Resource {
 public:
     virtual ~Resource() = default;
@@ -29,7 +55,7 @@ protected:
     Resource() = default;
 };
 
-using ResourcePtr = std::shared_ptr<boost::synchronized_value<Resource*>>;
+using ResourcePtr = std::shared_ptr<boost::synchronized_value<observer_ptr<Resource>>>;
 class _ResourceRegistry {
 private:
     _ResourceRegistry() = default;
@@ -61,7 +87,9 @@ public:
     void addResource(const std::string& id, std::unique_ptr<Resource>&& moved_resource) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         owned_resources.insert_or_assign(id, std::move(moved_resource));
-        auto resource = std::make_shared<boost::synchronized_value<Resource*>>(owned_resources[id].get());
+        auto resource = std::make_shared<boost::synchronized_value<observer_ptr<Resource>>>(
+            observer_ptr{owned_resources[id].get()}
+        );
         resources.insert_or_assign(id, std::move(resource));
     }
 

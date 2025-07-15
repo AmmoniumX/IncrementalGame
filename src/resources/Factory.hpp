@@ -55,7 +55,7 @@ public:
     virtual void onTick(const uint &gameTick) override {
         // Process factories
         if (gameTick % TICK_INTERVAL == 0) {
-            (static_cast<Clicker*>(*(clicker->synchronize())))->addCount(getCount());
+            (static_cast<Clicker*>(clicker->synchronize()->get()))->addCount(getCount());
         }
     }
 
