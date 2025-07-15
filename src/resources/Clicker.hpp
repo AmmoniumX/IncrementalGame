@@ -21,10 +21,9 @@ public:
         points = ResourceRegistry.getResource(Points::RESOURCE_ID);
     }
     
-    static std::shared_ptr<Clicker> getInstance() {
-        static std::shared_ptr<Clicker> instance = std::make_shared<Clicker>();
-        registerResource();
-        return instance;
+    static void getInstance() {
+        static std::unique_ptr<Clicker> instance = std::make_unique<Clicker>();
+        registerResource(std::move(instance));
     }
 
     virtual json serialize() const override {
@@ -95,7 +94,7 @@ public:
         const int speed_bonus = speed.to_number().value_or(1) - 1;
         const int clicker_freq_ticks = std::max(static_cast<int>(GAME_TICK_SPEED - 3*speed_bonus), 1);
         if (gameTick % clicker_freq_ticks == 0) { 
-            (std::dynamic_pointer_cast<Points>(*(points->synchronize())))->addPoints(count * prod);
+            (static_cast<Points*>(*(points->synchronize())))->addPoints(count * prod);
         }
     }
 

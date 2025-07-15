@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
@@ -28,13 +29,18 @@ protected:
     Resource() = default;
 };
 
-using ThreadSafeResource = boost::synchronized_value<std::shared_ptr<Resource>>;
-using ResourcePtr = std::shared_ptr<ThreadSafeResource>; // This holds a shared_ptr to the synchronized value
+using ResourcePtr = std::shared_ptr<boost::synchronized_value<Resource*>>;
 class _ResourceRegistry {
 private:
     _ResourceRegistry() = default;
 
+    // Container of uniquely owned resources
+    std::unordered_map<std::string, std::unique_ptr<Resource>> owned_resources;
+
+    // Container of shared pointers to resources, allowing thread-safe access
     std::unordered_map<std::string, ResourcePtr> resources;
+
+    // Mutex for synchronizing access to the resources
     std::mutex mtx_resources;
 
 public:
@@ -52,23 +58,25 @@ public:
         return result;
     }
 
-    void addResource(const std::string& id, std::shared_ptr<Resource>&& moved_resource) {
+    void addResource(const std::string& id, std::unique_ptr<Resource>&& moved_resource) {
         std::lock_guard<std::mutex> lock(mtx_resources);
-        auto resource = std::make_shared<ThreadSafeResource>(std::shared_ptr<Resource>(std::move(moved_resource)));
+        owned_resources.insert_or_assign(id, std::move(moved_resource));
+        auto resource = std::make_shared<boost::synchronized_value<Resource*>>(owned_resources[id].get());
         resources.insert_or_assign(id, std::move(resource));
     }
 
-    // This returns a shared_ptr to the boost::synchronized_value wrapper.
-    // The template parameter T is used for type checking at compile time, but the
-    // actual type held by boost::synchronized_value is always shared_ptr<Resource>.
-    std::shared_ptr<ThreadSafeResource> getResource(const std::string& resourceId) {
+    // This returns a pointer to a synchronized value that contains the resource.
+    // The internal pointer is a "raw" pointer, which is safe to use as long as the resource is not deleted.
+    // This is safe because the ResourceRegistry owns the resource and guarantees its lifetime, and
+    // ResourceRegistry itself is only destroyed at the end of the program.
+    ResourcePtr getResource(const std::string& resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         auto it = resources.find(resourceId);
         if (it == resources.end()) {
             return nullptr;
         }
 
-        // We return the shared_ptr to the ThreadSafeResource.
+        // We return the shared_ptr to the resource.
         // The caller will then call synchronize() on this returned object.
         return it->second;
     }
@@ -126,13 +134,13 @@ public:
 protected:
     RegisteredResource() = default;
 
-    static void registerResource() {
+    static void registerResource(std::unique_ptr<Derived> &&instance) {
         static bool registered = false;
         if (!registered) {
             registered = true;
             ResourceRegistry.addResource(
                 Derived::RESOURCE_ID,
-                Derived::getInstance()
+                std::move(instance)
             );
         }
     }

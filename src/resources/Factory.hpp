@@ -19,10 +19,9 @@ public:
         clicker = ResourceRegistry.getResource(Clicker::RESOURCE_ID);
     }
     
-    static std::shared_ptr<Factory> getInstance() {
-        static std::shared_ptr<Factory> instance = std::make_shared<Factory>();
-        registerResource();
-        return instance;
+    static void getInstance() {
+        static std::unique_ptr<Factory> instance = std::make_unique<Factory>();
+        registerResource(std::move(instance));
     }
     
     virtual json serialize() const override {
@@ -56,7 +55,7 @@ public:
     virtual void onTick(const uint &gameTick) override {
         // Process factories
         if (gameTick % TICK_INTERVAL == 0) {
-            (std::dynamic_pointer_cast<Clicker>(*(clicker->synchronize())))->addCount(getCount());
+            (static_cast<Clicker*>(*(clicker->synchronize())))->addCount(getCount());
         }
     }
 

@@ -46,11 +46,11 @@ private:
     }
 
     void refreshValues() {
-        points = std::dynamic_pointer_cast<Points>(*(pointsResource->synchronize()))->getPoints();
+        points = static_cast<Points*>(*(pointsResource->synchronize()))->getPoints();
         auto clickerLocked = clickerResource->synchronize();
-        std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+        Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
         auto factoryLocked = factoryResource->synchronize();
-        std::shared_ptr<Factory> factory = std::dynamic_pointer_cast<Factory>(*factoryLocked);
+        Factory* factory = static_cast<Factory*>(*factoryLocked);
         clickers = clicker->getCount();
         speed = clicker->getSpeed();
         prod = clicker->getProd();
@@ -110,9 +110,9 @@ public:
 
         {
             auto clickerLocked = clickerResource->synchronize();
-            std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+            Clicker* clicker = static_cast<Clicker*>(*clickerLocked);
             auto factoryLocked = factoryResource->synchronize();
-            std::shared_ptr<Factory> factory = std::dynamic_pointer_cast<Factory>(*factoryLocked);
+            Factory* factory = static_cast<Factory*>(*factoryLocked);
             clicker_cost = clicker->getCost();
             buyWindowContent[0]->setText("[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. "+clicker_cost.to_string()+" points");
             clicker_speed_cost = clicker->getSpeedCost();
@@ -128,7 +128,7 @@ public:
             case 'q':
                 return true;
             case '\n':
-                (std::dynamic_pointer_cast<Points>(*(pointsResource->synchronize())))->addPoints(N(1));
+                (static_cast<Points*>(*(pointsResource->synchronize())))->addPoints(N(1));
                 return false;
             case 'b':
                 buyWindow->toggle();
@@ -137,9 +137,9 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 {
                     auto pointsLocked = pointsResource->synchronize();
-                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto clickerLocked = clickerResource->synchronize();
-                    std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+                    Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
 
                     points = p->getPoints();
                     clicker_cost = clicker->getCost();
@@ -156,9 +156,9 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 {
                     auto pointsLocked = pointsResource->synchronize();
-                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto clickerLocked = clickerResource->synchronize();
-                    std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+                    Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
 
                     points = p->getPoints();
                     clicker_speed_cost = clicker->getSpeedCost();
@@ -173,9 +173,9 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 {
                     auto pointsLocked = pointsResource->synchronize();
-                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto clickerLocked = clickerResource->synchronize();
-                    std::shared_ptr<Clicker> clicker = std::dynamic_pointer_cast<Clicker>(*clickerLocked);
+                    Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
 
                     points = p->getPoints();
                     clicker_prod_cost = clicker->getProdCost();
@@ -187,11 +187,11 @@ public:
                 return false;
             case '4':
                 if (!buyWindow->isVisible()) return false;
-                {
+                {                    
                     auto pointsLocked = pointsResource->synchronize();
-                    std::shared_ptr<Points> p = std::dynamic_pointer_cast<Points>(*pointsLocked);
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto factoryLocked = factoryResource->synchronize();
-                    std::shared_ptr<Factory> factory = std::dynamic_pointer_cast<Factory>(*factoryLocked);
+                    Factory *factory = static_cast<Factory*>(*factoryLocked);
 
                     points = p->getPoints();
                     if (points >= factory_cost) {

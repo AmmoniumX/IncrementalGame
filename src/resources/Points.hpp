@@ -11,10 +11,9 @@ public:
 
     Points() {};
 
-    static std::shared_ptr<Points> getInstance() {
-        static std::shared_ptr<Points> instance = std::make_shared<Points>();
-        registerResource();
-        return instance;
+    static void getInstance() {
+        static std::unique_ptr<Points> instance = std::make_unique<Points>();
+        registerResource(std::move(instance));
     }
 
     virtual json serialize() const override {
