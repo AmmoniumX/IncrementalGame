@@ -34,6 +34,14 @@ private:
     WindowPtr sidebarUpgradesWindow;
     WindowPtr sidebarCraftingWindow;
 
+    enum Subwindows {
+        CRAFTING,
+        UPGRADES
+    };
+
+    WindowPtr activeWindow;
+    Subwindows activeWindowType;
+
     void notify(const std::string& text) {
         notifyText->setText(text, true);
         notifyTime = NOTIF_DURATION;
@@ -96,11 +104,14 @@ public:
         upgradesWindow = createWindow(5, 12, COLS-12, LINES-6, false, GAME_COLORS::RED_BLACK);
         (void) upgradesWindow->setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
         upgradeOptions.emplace("example_upgrade", upgradesWindow->putText(1, 1, "Example"));
-
+        
         craftingWindow = createWindow(5, 12, COLS-12, LINES-6, true, GAME_COLORS::YELLOW_BLACK);
         (void) craftingWindow->setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
         craftingOptions.emplace(Inventory::Items::IRON, craftingWindow->putText(1, 1, "[i]ron Ingots"));
         craftingOptions.emplace(Inventory::Items::COPPER, craftingWindow->putText(2, 1, "[c]opper Ingots"));
+        
+        activeWindowType = Subwindows::CRAFTING;
+        activeWindow = craftingWindow;
 
         sidebarCraftingWindow = createWindow(5, 0, 12, 3, true, GAME_COLORS::YELLOW_GRAY);
         (void) sidebarCraftingWindow->putText(1, 1, "[C]rafting", GAME_COLORS::DEFAULT);
@@ -137,18 +148,28 @@ public:
                 inv->addItem(Inventory::Items::COPPER, N(1));
                 return false;
             case 'C':
-                upgradesWindow->disable();
+                if (activeWindowType == Subwindows::CRAFTING) { return false; }
+                activeWindow->disable();
                 craftingWindow->enable();
 
                 sidebarCraftingWindow->setColorPair(GAME_COLORS::YELLOW_GRAY);
-                sidebarUpgradesWindow->setColorPair(GAME_COLORS::RED_BLACK);
+                if (activeWindowType == Subwindows::UPGRADES) { // turn to switch case when we have more windows
+                    sidebarUpgradesWindow->setColorPair(GAME_COLORS::RED_BLACK);
+                }
+                activeWindowType = Subwindows::CRAFTING;
+                activeWindow = craftingWindow;
                 return false;
             case 'U':
-                craftingWindow->disable();
+                if (activeWindowType == Subwindows::UPGRADES) { return false; }
+                activeWindow->disable();
                 upgradesWindow->enable();
 
-                sidebarCraftingWindow->setColorPair(GAME_COLORS::YELLOW_BLACK);
                 sidebarUpgradesWindow->setColorPair(GAME_COLORS::RED_GRAY);
+                if (activeWindowType == Subwindows::CRAFTING) { // turn to switch case when we have more windows
+                    sidebarCraftingWindow->setColorPair(GAME_COLORS::YELLOW_BLACK);
+                }
+                activeWindowType = Subwindows::UPGRADES;
+                activeWindow = upgradesWindow;
                 return false;
             case -1:
                 return false;
