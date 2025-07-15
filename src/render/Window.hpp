@@ -74,6 +74,11 @@ public:
         }
     }
 
+    void setColorPair(int col) {
+        color_pair = col;
+        wbkgd(win.get(), COLOR_PAIR(color_pair));
+    }
+
     bool isVisible() const { return visible; }
     void clearWindow() {
         // Temporarily set window color to the parent window's color

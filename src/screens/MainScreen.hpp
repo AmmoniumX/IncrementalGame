@@ -26,7 +26,13 @@ private:
     ResourcePtr inventory;
 
     WindowPtr craftingWindow;
-    std::vector<TextPtr> craftingOptions;
+    std::map<std::string, TextPtr> craftingOptions;
+
+    WindowPtr upgradesWindow;
+    std::map<std::string, TextPtr> upgradeOptions;
+
+    WindowPtr sidebarUpgradesWindow;
+    WindowPtr sidebarCraftingWindow;
 
     void notify(const std::string& text) {
         notifyText->setText(text, true);
@@ -72,8 +78,7 @@ private:
         // Set display lines
         for (int i = 0; i < 3; i++) {
             inventoryContents[i]->setText(display_lines[i], true);
-        }
-        
+        }   
     }
 
 public:
@@ -88,10 +93,19 @@ public:
             inventoryContents[i] = inventoryWindow->putText(i + 1, 2, "", GAME_COLORS::WHITE_BLACK);
         }
 
-        craftingWindow = createWindow(5, 0, COLS, LINES-6, true, GAME_COLORS::YELLOW_BLACK);
-        (void) craftingWindow->setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK);
-        craftingOptions.emplace_back(craftingWindow->putText(1, 1, "[I]ron Ingots"));
-        craftingOptions.emplace_back(craftingWindow->putText(2, 1, "[C]opper Ingots"));
+        upgradesWindow = createWindow(5, 12, COLS-12, LINES-6, false, GAME_COLORS::RED_BLACK);
+        (void) upgradesWindow->setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
+        upgradeOptions.emplace("example_upgrade", upgradesWindow->putText(1, 1, "Example"));
+
+        craftingWindow = createWindow(5, 12, COLS-12, LINES-6, true, GAME_COLORS::YELLOW_BLACK);
+        (void) craftingWindow->setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
+        craftingOptions.emplace(Inventory::Items::IRON, craftingWindow->putText(1, 1, "[i]ron Ingots"));
+        craftingOptions.emplace(Inventory::Items::COPPER, craftingWindow->putText(2, 1, "[c]opper Ingots"));
+
+        sidebarCraftingWindow = createWindow(5, 0, 12, 3, true, GAME_COLORS::YELLOW_BLACK);
+        (void) sidebarCraftingWindow->putText(1, 1, "[C]rafting", GAME_COLORS::DEFAULT);
+        sidebarUpgradesWindow = createWindow(8, 0, 12, 3, true, GAME_COLORS::RED_BLACK);
+        (void) sidebarUpgradesWindow->putText(1, 1, "[U]pgrades", GAME_COLORS::DEFAULT);
 
         // Create notification text
         notifyText = putText(LINES-1, 0, "");
@@ -121,6 +135,20 @@ public:
                 return false;
             case 'c':
                 inv->addItem(Inventory::Items::COPPER, N(1));
+                return false;
+            case 'C':
+                upgradesWindow->disable();
+                craftingWindow->enable();
+
+                sidebarCraftingWindow->setColorPair(GAME_COLORS::YELLOW_GRAY);
+                sidebarUpgradesWindow->setColorPair(GAME_COLORS::RED_BLACK);
+                return false;
+            case 'U':
+                craftingWindow->disable();
+                upgradesWindow->enable();
+
+                sidebarCraftingWindow->setColorPair(GAME_COLORS::YELLOW_BLACK);
+                sidebarUpgradesWindow->setColorPair(GAME_COLORS::RED_GRAY);
                 return false;
             case -1:
                 return false;

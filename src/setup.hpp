@@ -13,7 +13,9 @@ enum GAME_COLORS {
     YELLOW_BLACK = 1,
     RED_BLACK = 2,
     WHITE_BLACK = 3,
-    GRAY_BLACK = 4
+    GRAY_BLACK = 4,
+    YELLOW_GRAY = 5,
+    RED_GRAY = 6
 };
 
 // Ncurses setup
@@ -48,5 +50,7 @@ void setupNcurses() {
     init_pair(GAME_COLORS::YELLOW_BLACK, COLOR_YELLOW, COLOR_BLACK);
     init_pair(GAME_COLORS::RED_BLACK, COLOR_RED, COLOR_BLACK);
     init_pair(GAME_COLORS::WHITE_BLACK, COLOR_WHITE, COLOR_BLACK);
-    init_pair(GAME_COLORS::GRAY_BLACK, 8, COLOR_BLACK); // Gray on black
+    init_pair(GAME_COLORS::GRAY_BLACK, 8, COLOR_BLACK);
+    init_pair(GAME_COLORS::YELLOW_GRAY, COLOR_YELLOW, 8);
+    init_pair(GAME_COLORS::RED_GRAY, COLOR_RED, 8);
 }
