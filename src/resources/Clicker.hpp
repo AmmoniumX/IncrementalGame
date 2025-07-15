@@ -94,7 +94,7 @@ public:
         const int speed_bonus = speed.to_number().value_or(1) - 1;
         const int clicker_freq_ticks = std::max(static_cast<int>(GAME_TICK_SPEED - 3*speed_bonus), 1);
         if (gameTick % clicker_freq_ticks == 0) { 
-            (static_cast<Points*>(points->synchronize()->get()))->addPoints(count * prod);
+            (static_cast<Points*>(*(points->synchronize())))->addPoints(count * prod);
         }
     }
 

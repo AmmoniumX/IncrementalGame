@@ -46,11 +46,11 @@ private:
     }
 
     void refreshValues() {
-        points = static_cast<Points*>(pointsResource->synchronize()->get())->getPoints();
+        points = static_cast<Points*>(*(pointsResource->synchronize()))->getPoints();
         auto clickerLocked = clickerResource->synchronize();
-        Clicker *clicker = static_cast<Clicker*>(clickerLocked->get());
+        Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
         auto factoryLocked = factoryResource->synchronize();
-        Factory* factory = static_cast<Factory*>(factoryLocked->get());
+        Factory* factory = static_cast<Factory*>(*factoryLocked);
         clickers = clicker->getCount();
         speed = clicker->getSpeed();
         prod = clicker->getProd();
@@ -110,9 +110,9 @@ public:
 
         {
             auto clickerLocked = clickerResource->synchronize();
-            Clicker* clicker = static_cast<Clicker*>(clickerLocked->get());
+            Clicker* clicker = static_cast<Clicker*>(*clickerLocked);
             auto factoryLocked = factoryResource->synchronize();
-            Factory* factory = static_cast<Factory*>(factoryLocked->get());
+            Factory* factory = static_cast<Factory*>(*factoryLocked);
             clicker_cost = clicker->getCost();
             buyWindowContent[0]->setText("[1] Clicker: Gains "+prod.to_string()+" points every "+spc_ss.str()+"s. "+clicker_cost.to_string()+" points");
             clicker_speed_cost = clicker->getSpeedCost();
@@ -128,7 +128,7 @@ public:
             case 'q':
                 return true;
             case '\n':
-                (static_cast<Points*>(pointsResource->synchronize()->get()))->addPoints(N(1));
+                (static_cast<Points*>(*(pointsResource->synchronize())))->addPoints(N(1));
                 return false;
             case 'b':
                 buyWindow->toggle();
@@ -137,9 +137,9 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 {
                     auto pointsLocked = pointsResource->synchronize();
-                    Points *p = static_cast<Points*>(pointsLocked->get());
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto clickerLocked = clickerResource->synchronize();
-                    Clicker *clicker = static_cast<Clicker*>(clickerLocked->get());
+                    Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
 
                     points = p->getPoints();
                     clicker_cost = clicker->getCost();
@@ -156,9 +156,9 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 {
                     auto pointsLocked = pointsResource->synchronize();
-                    Points *p = static_cast<Points*>(pointsLocked->get());
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto clickerLocked = clickerResource->synchronize();
-                    Clicker *clicker = static_cast<Clicker*>(clickerLocked->get());
+                    Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
 
                     points = p->getPoints();
                     clicker_speed_cost = clicker->getSpeedCost();
@@ -173,9 +173,9 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 {
                     auto pointsLocked = pointsResource->synchronize();
-                    Points *p = static_cast<Points*>(pointsLocked->get());
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto clickerLocked = clickerResource->synchronize();
-                    Clicker *clicker = static_cast<Clicker*>(clickerLocked->get());
+                    Clicker *clicker = static_cast<Clicker*>(*clickerLocked);
 
                     points = p->getPoints();
                     clicker_prod_cost = clicker->getProdCost();
@@ -189,9 +189,9 @@ public:
                 if (!buyWindow->isVisible()) return false;
                 {                    
                     auto pointsLocked = pointsResource->synchronize();
-                    Points *p = static_cast<Points*>(pointsLocked->get());
+                    Points *p = static_cast<Points*>(*pointsLocked);
                     auto factoryLocked = factoryResource->synchronize();
-                    Factory *factory = static_cast<Factory*>(factoryLocked->get());
+                    Factory *factory = static_cast<Factory*>(*factoryLocked);
 
                     points = p->getPoints();
                     if (points >= factory_cost) {
