@@ -1,5 +1,5 @@
 #include <iostream>
-#include <ncurses.h>
+#include <ncursesw/ncurses.h>
 #include <string>
 #include <fstream>
 #include <getopt.h>
@@ -49,31 +49,30 @@ void gameWorker() {
 int run(string savefile) {
 
     // Initialize resoruces
-    std::println(std::cerr, "Creating resources");
+    std::println(std::cerr, "Registering resources...");
     Inventory::create();
 
     // Load game data
     load(savefile);
 
     // Initialize ncurses
-    std::println(std::cerr, "Setting up ncurses");
+    std::println(std::cerr, "Initializing ncurses...");
     setupNcurses();
 
     // Create and setup ScreenManager and Screen
-    std::println(std::cerr, "Setting up ScreenManager and MainScreen");
     ScreenPtr mainScreen = MainScreen::create();
     ScreenManager &manager = ScreenManager::getInstance();
     manager.changeScreen(mainScreen);
 
     // Main game loop
-    std::println(std::cerr, "Starting game thread");
+    std::println(std::cerr, "Starting game thread...");
     do_exit = false;
     std::thread gameThread([]() {
         gameWorker(); return;
     });
-    std::println(std::cerr, "Starting render loop");
+    std::println(std::cerr, "Game thread started. Starting render loop...");
     manager.run();
-    std::println(std::cerr, "Render loop ended");
+    std::println(std::cerr, "Render loop ended. Waiting for game thread...");
     // Cleanup
     do_exit = true;
     gameThread.join();

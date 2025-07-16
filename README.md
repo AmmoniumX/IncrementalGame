@@ -1,9 +1,15 @@
 # IncrementalGame
 A cli-based incremental game
 
-
-## Requirements
-- gcc >= 14.1
-- libncurses5-dev
+## Build Requirements
+- g++ >= 14.1
 - libncursesw5-dev
-- libboost-dev
+- libboost-thread-dev
+
+## Runtime Requirements 
+- libncursesw5
+- libboost-thread
+
+## Terminal Requirements
+- 256-bit colors
+- UTF-8 wchar support

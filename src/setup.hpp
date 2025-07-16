@@ -3,7 +3,7 @@
 #include <iostream>
 #include <print>
 
-#include <ncurses.h>
+#include <ncursesw/ncurses.h>
 
 // Constants
 constexpr uint FRAME_RATE = 30;
@@ -20,7 +20,7 @@ enum GAME_COLORS {
 
 // Ncurses setup
 void setupNcurses() {
-
+    setlocale(LC_ALL, "");  // Enable UTF-8 support in ncurses
     initscr();              // Initialize ncurses mode
     
     // Check terminal color support

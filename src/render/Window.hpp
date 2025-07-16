@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ncurses.h>
+#include <ncursesw/ncurses.h>
 #include <string>
 #include <memory>
 #include <iostream>
@@ -136,6 +136,12 @@ public:
     }
 
     std::shared_ptr<Text> putText(int textY, int textX, const std::string& text, int text_color_pair=0) {
+        auto textObj = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
+        texts.push_back(textObj);
+        return textObj;
+    }
+
+    std::shared_ptr<Text> putText(int textY, int textX, const std::wstring& text, int text_color_pair=0) {
         auto textObj = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
         texts.push_back(textObj);
         return textObj;

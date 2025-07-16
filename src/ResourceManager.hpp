@@ -1,11 +1,13 @@
 #pragma once
 
 #include <iostream>
+#include <print>
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
 #include <mutex>
+
 #include <boost/thread/synchronized_value.hpp>
 
 #include "./json.hpp"
@@ -59,6 +61,7 @@ public:
     }
 
     void addResource(const std::string& id, std::unique_ptr<Resource>&& moved_resource) {
+        std::println(std::cerr, "Registering resource: {}", id);
         std::lock_guard<std::mutex> lock(mtx_resources);
         owned_resources.insert_or_assign(id, std::move(moved_resource));
         auto resource = std::make_unique<boost::synchronized_value<Resource*>>(owned_resources[id].get());

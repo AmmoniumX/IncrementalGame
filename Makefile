@@ -6,7 +6,7 @@ CPPSTD = gnu++26 # Recommended: gnu++26, minimum: c++23
 CXXFLAGS = -Wall -Wextra -Werror -I/usr/include -std=$(CPPSTD) -fno-trapping-math -march=native
 
 # Libraries
-LDFLAGS = -lncurses -lboost_thread
+LDFLAGS = -lncursesw -lboost_thread
 
 # Source and Header Files
 CORE_HDRS = $(wildcard src/*.hpp)
