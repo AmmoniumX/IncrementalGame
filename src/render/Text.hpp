@@ -1,50 +1,56 @@
 #pragma once
 
-#include <ncursesw/ncurses.h>
 #include <string>
-#include <memory>
-#include <iostream>
-#include <print>
-#include <optional>
 #include <variant>
+#include <memory>
+#include <optional>
+#include <locale.h>
+#include <ncursesw/ncurses.h>
+#include <cwchar>
 
-/*
- * @class Text
- * @brief A class to represent and render text on a window or the standard screen.
- *
- * @param y The y-coordinate of the text position.
- * @param x The x-coordinate of the text position.
- * @param text The string content of the text.
- * @param win A shared pointer to the window where the text will be rendered. If nullptr, the text will be rendered on the standard screen.
- */
 class Text {
 private:
     int y, x;
-    std::variant<std::string, std::wstring> text; // Support for wide characters
+    std::variant<std::string, std::wstring> text;
     int color_pair = 0;
     std::shared_ptr<WINDOW> win;
-    int needsClear = 0;
-    void doClear(int len) {
-        if (!win) {
-            mvprintw(y, x, "%*s", len, " ");
-        } else {
-            mvwprintw(win.get(), y, x, "%*s", len, " ");
-        }
+    bool needsClear = false;
+
+    WINDOW* getWin() const {
+        return win ? win.get() : stdscr;
     }
-    
+
+    void doClear(size_t len) {
+        std::string blank(len, ' ');
+        mvwaddstr(getWin(), y, x, blank.c_str());
+    }
+
     void doClear() {
-        doClear(static_cast<int>(getLength()));
+        if (needsClear) {
+            doClear(getVisualLength());
+            needsClear = false;
+        }
     }
 
 public:
-    Text(int y, int x, const std::string& text, int color_pair = 0, std::shared_ptr<WINDOW> win=nullptr) : 
-        y(y), x(x), text(text), color_pair(color_pair), win(win) {}
+    Text(int y, int x, const std::string& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
+        : y(y), x(x), text(txt), color_pair(color_pair), win(win) {}
 
-    Text(int y, int x, const std::wstring& text, int color_pair = 0, std::shared_ptr<WINDOW> win=nullptr) :
-        y(y), x(x), text(text), color_pair(color_pair), win(win) {}
+    Text(int y, int x, const std::wstring& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
+        : y(y), x(x), text(txt), color_pair(color_pair), win(win) {}
 
     size_t getLength() const {
         return std::visit([](const auto& str) { return str.size(); }, text);
+    }
+
+    size_t getVisualLength() const {
+        return std::visit([](const auto& str) {
+            if constexpr (std::is_same_v<decltype(str), const std::wstring&>) {
+                return static_cast<size_t>(wcswidth(str.c_str(), str.size()));
+            } else {
+                return str.size();
+            }
+        }, text);
     }
 
     bool isWide() const {
@@ -56,96 +62,73 @@ public:
     }
 
     std::optional<std::string> getText() const {
-        if (std::holds_alternative<std::string>(text)) {
-            return std::get<std::string>(text);
-        }
+        if (auto p = std::get_if<std::string>(&text)) return *p;
         return std::nullopt;
     }
 
     std::optional<std::wstring> getWText() const {
-        if (std::holds_alternative<std::wstring>(text)) {
-            return std::get<std::wstring>(text);
-        }
+        if (auto p = std::get_if<std::wstring>(&text)) return *p;
         return std::nullopt;
     }
 
     int getX() const { return x; }
     int getY() const { return y; }
 
-    void setText(const std::string& newText, bool clear=false) { 
-        if (clear) { needsClear = static_cast<int>(getLength()); }
+    void setText(const std::string& newText, bool clear = false) {
+        if (clear) needsClear = true;
         text = newText;
     }
 
-    void setText(const std::wstring& newText, bool clear=false) { 
-        if (clear) { needsClear = static_cast<int>(getLength()); }
+    void setText(const std::wstring& newText, bool clear = false) {
+        if (clear) needsClear = true;
         text = newText;
     }
 
     void setX(int px) { x = px; }
     void setY(int py) { y = py; }
 
-    void setColorPair(int pair) { 
-        if (pair < 0) {
-            std::println(std::cerr, "Invalid color pair: {}", pair);
-            return;
+    void setColorPair(int pair) {
+        if (pair >= 0) {
+            color_pair = pair;
+        } else {
+            std::fprintf(stderr, "Invalid color pair: %d\n", pair);
         }
-        color_pair = pair; 
     }
+
     int getColorPair() const { return color_pair; }
 
     void render() {
-        if (needsClear > 0) {
-            doClear(needsClear);
-            needsClear = 0;
-        }
-        if (isEmpty()) { return; }
+        doClear();
+        if (isEmpty()) return;
 
-        // Apply color before rendering text
+        WINDOW* w = getWin();
+
         if (color_pair > 0) {
-            if (!win) {
-                attron(COLOR_PAIR(color_pair));
-                if (isWide()) {
-                    mvaddwstr(y, x, std::get<std::wstring>(text).c_str());
-                } else {
-                    mvaddstr(y, x, std::get<std::string>(text).c_str());
-                }
-                attroff(COLOR_PAIR(color_pair));
-            } else {
-                wattron(win.get(), COLOR_PAIR(color_pair));
-                if (isWide()) {
-                    mvwaddwstr(win.get(), y, x, std::get<std::wstring>(text).c_str());
-                } else {
-                    mvwaddstr(win.get(), y, x, std::get<std::string>(text).c_str());
-                }
-                wattroff(win.get(), COLOR_PAIR(color_pair));
+            wattron(w, COLOR_PAIR(color_pair));
+        }
+
+        std::visit([&](const auto& str) {
+            using T = std::decay_t<decltype(str)>;
+            if constexpr (std::is_same_v<T, std::string>) {
+                mvwaddstr(w, y, x, str.c_str());
+            } else if constexpr (std::is_same_v<T, std::wstring>) {
+                mvwaddwstr(w, y, x, str.c_str());
             }
-        } else {
-            // Render without color
-            if (!win) {
-                if (isWide()) {
-                    mvaddwstr(y, x, std::get<std::wstring>(text).c_str());
-                } else {
-                    mvaddstr(y, x, std::get<std::string>(text).c_str());
-                }
-            } else {
-                if (isWide()) {
-                    mvwaddwstr(win.get(), y, x, std::get<std::wstring>(text).c_str());
-                } else {
-                    mvwaddstr(win.get(), y, x, std::get<std::string>(text).c_str());
-                }
-            }
+        }, text);
+
+        if (color_pair > 0) {
+            wattroff(w, COLOR_PAIR(color_pair));
         }
     }
 
     void clear() {
-        needsClear = static_cast<int>(getLength());
+        needsClear = true;
     }
 
     void reset() {
         clear();
-        text = "";
+        std::visit([](auto& str) { str.clear(); }, text);
     }
-
 };
-typedef std::shared_ptr<Text> TextPtr;
+
+using TextPtr = std::shared_ptr<Text>;

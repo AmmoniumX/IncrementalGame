@@ -64,7 +64,7 @@ private:
             size_t entrySize = entry.size();
 
             // Set entry to first line that has enough space
-            if (inventoryContents[currLine]->getLength() + entrySize + 1 < charsPerLine) {
+            if (inventoryContents[currLine]->getVisualLength() + entrySize + 1 < charsPerLine) {
                 if (currLine < 3) {
                     display_lines[currLine] += entry + " ";
                 } else {
