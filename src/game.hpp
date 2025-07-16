@@ -10,7 +10,7 @@
 
 #include "BigNum.hpp"
 #include "json.hpp"
-#include "resourceRegistry.hpp"
+#include "ResourceManager.hpp"
 
 using std::string;
 using nlohmann::json;
@@ -29,12 +29,12 @@ T get_or(const json& j, const std::string& key, const T& default_value) {
 
 // Convert game data to json
 json to_json() {
-    return ResourceRegistry.serialize();
+    return ResourceManager.serialize();
 }
 
 // Convert json to game data
 void from_json(const json& j) {
-    ResourceRegistry.deserialize(j);
+    ResourceManager.deserialize(j);
 }
 
 // Save game data
@@ -61,7 +61,7 @@ void load(const string& filename) {
     // Load json from file
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::println(std::cerr, "File not found, ResourceRegistry will be empty!");
+        std::println(std::cerr, "File not found, ResourceManager will be empty!");
         return;
     }
 

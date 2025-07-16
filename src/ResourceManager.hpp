@@ -30,9 +30,9 @@ protected:
 };
 
 using ResourcePtr = boost::synchronized_value<Resource*>*;
-class _ResourceRegistry {
+class _ResourceManager {
 private:
-    _ResourceRegistry() = default;
+    _ResourceManager() = default;
 
     // Container of uniquely owned resources
     std::unordered_map<std::string, std::unique_ptr<Resource>> owned_resources;
@@ -44,8 +44,8 @@ private:
     std::mutex mtx_resources;
 
 public:
-    static _ResourceRegistry& create() {
-        static _ResourceRegistry instance;
+    static _ResourceManager& create() {
+        static _ResourceManager instance;
         return instance;
     }
 
@@ -67,8 +67,8 @@ public:
 
     // This returns a pointer to a synchronized value that contains the resource.
     // The internal pointer is a "raw" pointer, which is safe to use as long as the resource is not deleted.
-    // This is safe because the ResourceRegistry owns the resource and guarantees its lifetime, and
-    // ResourceRegistry itself is only destroyed at the end of the program.
+    // This is safe because the ResourceManager owns the resource and guarantees its lifetime, and
+    // ResourceManager itself is only destroyed at the end of the program.
     ResourcePtr getResource(const std::string& resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         auto it = owned_synchronized_resources.find(resourceId);
@@ -121,7 +121,7 @@ public:
 };
 
 // Inline definition of global instance
-inline _ResourceRegistry& ResourceRegistry = _ResourceRegistry::create();
+inline _ResourceManager& ResourceManager = _ResourceManager::create();
 
 // CRTP helper for automatic registration
 template <typename Derived>
@@ -138,7 +138,7 @@ protected:
         static bool registered = false;
         if (!registered) {
             registered = true;
-            ResourceRegistry.addResource(
+            ResourceManager.addResource(
                 Derived::RESOURCE_ID,
                 std::move(instance)
             );

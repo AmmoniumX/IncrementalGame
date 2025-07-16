@@ -5,7 +5,7 @@
 #include <string_view>
 
 #include "../game.hpp"
-#include "../resourceRegistry.hpp"
+#include "../ResourceManager.hpp"
 
 class Inventory: public RegisteredResource<Inventory> {
 private:

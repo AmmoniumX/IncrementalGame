@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../game.hpp"
-#include "../resourceRegistry.hpp"
+#include "../ResourceManager.hpp"
 #include "../render/Text.hpp"
 #include "../render/Window.hpp"
 #include "../render/Screen.hpp"
@@ -92,7 +92,7 @@ private:
 public:
     MainScreen() : Screen() {
         // Get inventory
-        inventory = ResourceRegistry.getResource(Inventory::RESOURCE_ID);
+        inventory = ResourceManager.getResource(Inventory::RESOURCE_ID);
 
         // Create screen elements
         inventoryWindow = createWindow(0, 0, COLS, 5, true, GAME_COLORS::GRAY_BLACK);

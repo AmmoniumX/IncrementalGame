@@ -26,7 +26,7 @@ namespace {
 }
 
 void gameTick() {
-    ResourceRegistry.onTick(tick);
+    ResourceManager.onTick(tick);
     tick++;
 }
 
