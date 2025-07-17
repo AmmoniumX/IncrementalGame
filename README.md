@@ -13,3 +13,7 @@ A cli-based incremental game
 ## Terminal Requirements
 - 256-bit colors
 - UTF-8 wchar support
+
+## Build information
+You can generate a `compile_commands.json` file by running `bear -- make`.
+
