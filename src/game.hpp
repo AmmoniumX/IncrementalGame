@@ -3,10 +3,6 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <mutex>
-#include <optional>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "BigNum.hpp"
 #include "json.hpp"

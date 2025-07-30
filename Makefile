@@ -3,7 +3,8 @@ CXX = g++
 CPPSTD = gnu++26 # Recommended: gnu++26, minimum: c++23
 
 # Common Flags
-CXXFLAGS = -Wall -Wextra -Werror -I/usr/include -std=$(CPPSTD) -fno-trapping-math -march=native
+CXXFLAGS = -Wall -Wextra -Werror -I/usr/include -std=$(CPPSTD) -march=native
+CXXFLAGS += -fno-trapping-math -DNO_TRAPPING_MATH # Set to enable certain constexpr optimizations
 
 # Libraries
 LDFLAGS = -lncursesw -lboost_thread
