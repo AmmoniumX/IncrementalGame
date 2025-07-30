@@ -33,6 +33,9 @@ private:
     std::shared_ptr<WINDOW> parentWin;
     TextPtr title = nullptr;
 public:
+
+    virtual ~Window() = default;
+
     enum class Alignment {
         LEFT,
         CENTER,

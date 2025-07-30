@@ -90,6 +90,9 @@ private:
     }
 
 public:
+
+    virtual ~MainScreen() = default;
+
     MainScreen() : Screen() {
         // Get inventory
         inventory = ResourceManager.getResource(Inventory::RESOURCE_ID);

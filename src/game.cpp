@@ -1,7 +1,5 @@
 #include <iostream>
 #include <ncursesw/ncurses.h>
-#include <string>
-#include <fstream>
 #include <getopt.h>
 #include <thread>
 #include <ctime>
@@ -10,13 +8,11 @@
 
 #include "setup.hpp"
 #include "game.hpp"
-#include "./render/Window.hpp"
 #include "./render/Screen.hpp"
 #include "./render/ScreenManager.hpp"
 #include "./screens/MainScreen.hpp"
 #include "./resources/Inventory.hpp"
 
-using std::cout, std::endl;
 using nlohmann::json;
 
 namespace {
