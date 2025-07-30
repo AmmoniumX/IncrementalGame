@@ -1,25 +1,25 @@
+#include <atomic>
+#include <ctime>
+#include <getopt.h>
 #include <iostream>
 #include <ncursesw/ncurses.h>
-#include <getopt.h>
-#include <thread>
-#include <ctime>
-#include <atomic>
 #include <print>
+#include <thread>
 
-#include "setup.hpp"
-#include "game.hpp"
 #include "./render/Screen.hpp"
 #include "./render/ScreenManager.hpp"
-#include "./screens/MainScreen.hpp"
 #include "./resources/Inventory.hpp"
+#include "./screens/MainScreen.hpp"
+#include "game.hpp"
+#include "setup.hpp"
 
 using nlohmann::json;
 
 namespace {
-    // Private game variables
-    uint tick = 0;
-    std::atomic_bool do_exit = false;
-}
+// Private game variables
+uint tick = 0;
+std::atomic_bool do_exit = false;
+} // namespace
 
 void gameTick() {
     ResourceManager.onTick(tick);
@@ -35,12 +35,11 @@ void gameWorker() {
         double delta = difftime(end, start);
         double sleep_time = 1.0 / GAME_TICK_SPEED - delta;
         if (sleep_time > 0) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>(sleep_time * 1000)));
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(static_cast<int>(sleep_time * 1000)));
         }
     }
 }
-
-
 
 int run(string savefile) {
 
@@ -64,7 +63,8 @@ int run(string savefile) {
     std::println(std::cerr, "Starting game thread...");
     do_exit = false;
     std::thread gameThread([]() {
-        gameWorker(); return;
+        gameWorker();
+        return;
     });
     std::println(std::cerr, "Game thread started. Starting render loop...");
     manager.run();
@@ -83,12 +83,11 @@ int main(int argc, char *argv[]) {
 
     // Parse arguments
     int opt;
-    static struct option long_options[] = {
-        {"save", required_argument, 0, 0},
-        {0, 0, 0, 0}
-    };
+    static struct option long_options[] = {{"save", required_argument, 0, 0},
+                                           {0, 0, 0, 0}};
     int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) != -1) {
+    while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) !=
+           -1) {
         if (opt == 0 && strcmp(long_options[option_index].name, "save") == 0) {
             savefile = optarg;
         } else {

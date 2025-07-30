@@ -4,13 +4,14 @@
 #include <string>
 #include <string_view>
 
-#include "../game.hpp"
 #include "../ResourceManager.hpp"
+#include "../game.hpp"
 
-class Inventory: public RegisteredResource<Inventory> {
-private:
+class Inventory : public RegisteredResource<Inventory> {
+  private:
     std::map<std::string, BigNum> items;
-public:
+
+  public:
     static constexpr const std::string RESOURCE_ID = "inventory";
 
     struct Items {
@@ -24,15 +25,14 @@ public:
     Inventory() {}
 
     static void create() {
-        static std::unique_ptr<Inventory> instance = std::make_unique<Inventory>();
+        static std::unique_ptr<Inventory> instance =
+            std::make_unique<Inventory>();
         registerResource(std::move(instance));
     }
 
-    const std::map<std::string, BigNum>& getItems() const {
-        return items;
-    }
+    const std::map<std::string, BigNum> &getItems() const { return items; }
 
-    BigNum getItem(const std::string& item) const {
+    BigNum getItem(const std::string &item) const {
         auto it = items.find(item);
         if (it != items.end()) {
             return it->second;
@@ -40,15 +40,15 @@ public:
         return BigNum(0); // Return 0 if item not found
     }
 
-    void setItem(const std::string& item, const BigNum& amount) {
+    void setItem(const std::string &item, const BigNum &amount) {
         items[item] = amount;
     }
 
-    void addItem(const std::string& item, const BigNum& amount) {
+    void addItem(const std::string &item, const BigNum &amount) {
         items[item] += amount;
     }
 
-    void subtractItem(const std::string& item, const BigNum& amount) {
+    void subtractItem(const std::string &item, const BigNum &amount) {
         items[item] -= amount;
         if (items[item] < BigNum(0)) {
             items[item] = BigNum(0); // Prevent negative amounts
@@ -57,15 +57,16 @@ public:
 
     virtual json serialize() const override {
         json j;
-        for (const auto& item : items) {
+        for (const auto &item : items) {
             j[item.first] = item.second.serialize();
         }
         return j;
     }
 
-    virtual void deserialize(const json& j) override {
-        for (const auto& [key, value] : j.items()) {
-            std::string valueStr = value.is_string() ? value.get<std::string>() : "0";
+    virtual void deserialize(const json &j) override {
+        for (const auto &[key, value] : j.items()) {
+            std::string valueStr =
+                value.is_string() ? value.get<std::string>() : "0";
             items[key] = BigNum::deserialize(valueStr);
         }
     }
@@ -75,7 +76,6 @@ public:
     }
 
     // Prevent copying and assignment
-    Inventory(const Inventory&) = delete;
-    Inventory& operator=(const Inventory&) = delete;
-
+    Inventory(const Inventory &) = delete;
+    Inventory &operator=(const Inventory &) = delete;
 };
