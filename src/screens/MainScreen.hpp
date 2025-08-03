@@ -37,21 +37,20 @@ class MainScreen : public Screen {
         CRAFTING = 0, 
         UPGRADES = 1
     };
-    std::array<WindowPtr*, 2> windowOrder = {&craftingWindow, &upgradesWindow};
-    std::map<Subwindows, WindowPtr*> sidebarWindow = {
-        {CRAFTING, &sidebarCraftingWindow},
-        {UPGRADES, &sidebarUpgradesWindow}
+    struct WindowGroup {
+        WindowPtr* main;
+        WindowPtr* sidebar;
+        int activeColor;
+        int inactiveColor;
     };
-    std::map<Subwindows, int> inactiveColor = {
-        {CRAFTING, GAME_COLORS::YELLOW_BLACK},
-        {UPGRADES, GAME_COLORS::RED_BLACK}
-    };
-    std::map<Subwindows, int> activeColor = {
-    {CRAFTING, GAME_COLORS::YELLOW_GRAY},
-    {UPGRADES, GAME_COLORS::RED_GRAY}
+    
+    std::map<Subwindows, WindowGroup> windows = {
+        {CRAFTING, {&craftingWindow, &sidebarCraftingWindow, 
+            GAME_COLORS::YELLOW_GRAY, GAME_COLORS::YELLOW_BLACK}},
+        {UPGRADES, {&upgradesWindow, &sidebarUpgradesWindow, 
+            GAME_COLORS::RED_GRAY, GAME_COLORS::RED_BLACK}}
     };
     Subwindows activeWindow = CRAFTING;
-    size_t expectedSize = 2;
 
     void notify(const std::string &text) {
         notifyText->setText(text, true);
@@ -59,20 +58,20 @@ class MainScreen : public Screen {
     }
 
     void rotateWindows() {
-        (*windowOrder[activeWindow])->disable();
-        (*sidebarWindow[activeWindow])->setColorPair(inactiveColor[activeWindow]);
-        activeWindow = Subwindows((activeWindow + 1) % windowOrder.size());
-        (*windowOrder[activeWindow])->enable();
-        (*sidebarWindow[activeWindow])->setColorPair(activeColor[activeWindow]);
+        (*windows[activeWindow].main)->disable();
+        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].inactiveColor);
+        activeWindow = Subwindows((activeWindow + 1) % windows.size());
+        (*windows[activeWindow].main)->enable();
+        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].activeColor);
     }
 
     void switchWindow(Subwindows target) {
         if (target == activeWindow) { return; }
-        (*windowOrder[activeWindow])->disable();
-        (*sidebarWindow[activeWindow])->setColorPair(inactiveColor[activeWindow]);
+        (*windows[activeWindow].main)->disable();
+        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].inactiveColor);
         activeWindow = target;
-        (*windowOrder[activeWindow])->enable();
-        (*sidebarWindow[activeWindow])->setColorPair(activeColor[activeWindow]);
+        (*windows[activeWindow].main)->enable();
+        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].activeColor);
     }
 
     void refreshInventoryCounts() {
@@ -127,13 +126,6 @@ class MainScreen : public Screen {
     virtual ~MainScreen() = default;
 
     MainScreen() : Screen() {
-        assert(
-            windowOrder.size() == expectedSize &&
-            sidebarWindow.size() == expectedSize &&
-            inactiveColor.size() == expectedSize &&
-            activeColor.size() == expectedSize &&
-            "Active window variables have non-matching sizes!"
-        );
         // Get inventory
         inventory = ResourceManager.getResource(Inventory::RESOURCE_ID);
 
