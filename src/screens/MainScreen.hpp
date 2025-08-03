@@ -8,12 +8,11 @@
 #include "../resources/Inventory.hpp"
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <format>
 #include <iostream>
 #include <map>
 #include <print>
-#include <sstream>
-#include <vector>
 
 class MainScreen : public Screen {
   private:
@@ -34,14 +33,46 @@ class MainScreen : public Screen {
     WindowPtr sidebarUpgradesWindow;
     WindowPtr sidebarCraftingWindow;
 
-    enum Subwindows { CRAFTING, UPGRADES };
-
-    WindowPtr activeWindow;
-    Subwindows activeWindowType;
+    enum Subwindows { 
+        CRAFTING = 0, 
+        UPGRADES = 1
+    };
+    std::array<WindowPtr*, 2> windowOrder = {&craftingWindow, &upgradesWindow};
+    std::map<Subwindows, WindowPtr*> sidebarWindow = {
+        {CRAFTING, &sidebarCraftingWindow},
+        {UPGRADES, &sidebarUpgradesWindow}
+    };
+    std::map<Subwindows, int> inactiveColor = {
+        {CRAFTING, GAME_COLORS::YELLOW_BLACK},
+        {UPGRADES, GAME_COLORS::RED_BLACK}
+    };
+    std::map<Subwindows, int> activeColor = {
+    {CRAFTING, GAME_COLORS::YELLOW_GRAY},
+    {UPGRADES, GAME_COLORS::RED_GRAY}
+    };
+    Subwindows activeWindow = CRAFTING;
+    size_t expectedSize = 2;
 
     void notify(const std::string &text) {
         notifyText->setText(text, true);
         notifyTime = NOTIF_DURATION;
+    }
+
+    void rotateWindows() {
+        (*windowOrder[activeWindow])->disable();
+        (*sidebarWindow[activeWindow])->setColorPair(inactiveColor[activeWindow]);
+        activeWindow = Subwindows((activeWindow + 1) % windowOrder.size());
+        (*windowOrder[activeWindow])->enable();
+        (*sidebarWindow[activeWindow])->setColorPair(activeColor[activeWindow]);
+    }
+
+    void switchWindow(Subwindows target) {
+        if (target == activeWindow) { return; }
+        (*windowOrder[activeWindow])->disable();
+        (*sidebarWindow[activeWindow])->setColorPair(inactiveColor[activeWindow]);
+        activeWindow = target;
+        (*windowOrder[activeWindow])->enable();
+        (*sidebarWindow[activeWindow])->setColorPair(activeColor[activeWindow]);
     }
 
     void refreshInventoryCounts() {
@@ -96,6 +127,13 @@ class MainScreen : public Screen {
     virtual ~MainScreen() = default;
 
     MainScreen() : Screen() {
+        assert(
+            windowOrder.size() == expectedSize &&
+            sidebarWindow.size() == expectedSize &&
+            inactiveColor.size() == expectedSize &&
+            activeColor.size() == expectedSize &&
+            "Active window variables have non-matching sizes!"
+        );
         // Get inventory
         inventory = ResourceManager.getResource(Inventory::RESOURCE_ID);
 
@@ -121,13 +159,12 @@ class MainScreen : public Screen {
         (void)craftingWindow->setTitle("Crafting", Window::Alignment::LEFT,
                                        GAME_COLORS::YELLOW_BLACK, 1);
         craftingOptions.emplace(Inventory::Items::IRON,
-                                craftingWindow->putText(1, 1, "[i]ron Ingots"));
+                                craftingWindow->putText(1, 1, "[1] Iron Ingots"));
         craftingOptions.emplace(
             Inventory::Items::COPPER,
-            craftingWindow->putText(2, 1, "[c]opper Ingots"));
+            craftingWindow->putText(2, 1, "[2] Copper Ingots"));
 
-        activeWindowType = Subwindows::CRAFTING;
-        activeWindow = craftingWindow;
+        activeWindow = CRAFTING;
 
         sidebarCraftingWindow =
             createWindow(5, 0, 12, 3, true, GAME_COLORS::YELLOW_GRAY);
@@ -161,43 +198,20 @@ class MainScreen : public Screen {
         switch (input) {
         case 'q':
             return true;
-        case 'i':
+        case '1':
             inv->addItem(Inventory::Items::IRON, N(1));
             return false;
-        case 'c':
+        case '2':
             inv->addItem(Inventory::Items::COPPER, N(1));
             return false;
         case 'C':
-            if (activeWindowType == Subwindows::CRAFTING) {
-                return false;
-            }
-            activeWindow->disable();
-            craftingWindow->enable();
-
-            sidebarCraftingWindow->setColorPair(GAME_COLORS::YELLOW_GRAY);
-            if (activeWindowType ==
-                Subwindows::UPGRADES) { // turn to switch case when we have more
-                                        // windows
-                sidebarUpgradesWindow->setColorPair(GAME_COLORS::RED_BLACK);
-            }
-            activeWindowType = Subwindows::CRAFTING;
-            activeWindow = craftingWindow;
+            switchWindow(CRAFTING);
             return false;
         case 'U':
-            if (activeWindowType == Subwindows::UPGRADES) {
-                return false;
-            }
-            activeWindow->disable();
-            upgradesWindow->enable();
-
-            sidebarUpgradesWindow->setColorPair(GAME_COLORS::RED_GRAY);
-            if (activeWindowType ==
-                Subwindows::CRAFTING) { // turn to switch case when we have more
-                                        // windows
-                sidebarCraftingWindow->setColorPair(GAME_COLORS::YELLOW_BLACK);
-            }
-            activeWindowType = Subwindows::UPGRADES;
-            activeWindow = upgradesWindow;
+            switchWindow(UPGRADES);
+            return false;
+        case '\t':
+            rotateWindows();
             return false;
         case -1:
             return false;
