@@ -18,9 +18,10 @@
 
 class MainScreen : public Screen {
   private:
-    static constexpr double NOTIF_DURATION = 1.5 * FRAME_RATE;
+    static constexpr int NOTIF_DURATION = static_cast<int>(1.5 * FRAME_RATE);
     TextPtr notifyText;
-    double notifyTime = 0;
+    int notifyTime = 0;
+    bool notifyClear = false;
 
     WindowPtr inventoryWindow;
     std::array<TextPtr, 3> inventoryContents;
@@ -58,6 +59,7 @@ class MainScreen : public Screen {
     void notify(const std::string &text) {
         notifyText->setText(text, true);
         notifyTime = NOTIF_DURATION;
+        notifyClear = false;
     }
 
     void rotateWindows() {
@@ -121,6 +123,10 @@ class MainScreen : public Screen {
 
         // Set display lines
         for (int i = 0; i < 3; i++) {
+            auto oldText = inventoryContents[i]->getText();
+            if (oldText) {
+                if (*oldText == display_lines[i]) { return; }
+            }
             inventoryContents[i]->setText(display_lines[i], true);
         }
     }
@@ -182,8 +188,9 @@ class MainScreen : public Screen {
         if (notifyTime > 0) {
             notifyTime--;
         }
-        if (notifyTime == 0) {
+        if (notifyTime <= 0 && !notifyClear) {
             notifyText->reset();
+            notifyClear = true;
         }
         refreshInventoryCounts();
 

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cstdio>
+#include <algorithm>
+#include <ostream>
 #include <string>
 #include <variant>
 #include <memory>
@@ -7,6 +10,8 @@
 #include <locale.h>
 #include <ncursesw/ncurses.h>
 #include <cwchar>
+#include <print>
+#include <iostream>
 
 class Text {
 private:
@@ -14,23 +19,24 @@ private:
     std::variant<std::string, std::wstring> text;
     int color_pair = 0;
     std::shared_ptr<WINDOW> win;
-    bool needsClear = false;
+    size_t needsClear = 0;
+    bool clearStr = false;
 
     WINDOW* getWin() const {
         return win ? win.get() : stdscr;
     }
 
-    void doClear(size_t len) {
-        std::string blank(len, ' ');
+    void doClear() {
+        if (needsClear <= 0) { return; }
+        std::string blank(needsClear, ' ');
         mvwaddstr(getWin(), y, x, blank.c_str());
+        if (clearStr) {
+            std::visit([](auto& str) { str.clear(); }, text);
+            clearStr = false;
+        }
+        needsClear = 0;
     }
 
-    void doClear() {
-        if (needsClear) {
-            doClear(getVisualLength());
-            needsClear = false;
-        }
-    }
 
 public:
     Text(int y, int x, const std::string& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
@@ -75,12 +81,12 @@ public:
     int getY() const { return y; }
 
     void setText(const std::string& newText, bool clear = false) {
-        if (clear) needsClear = true;
+        if (clear) needsClear = std::max(needsClear, getVisualLength());
         text = newText;
     }
 
     void setText(const std::wstring& newText, bool clear = false) {
-        if (clear) needsClear = true;
+        if (clear) needsClear = std::max(needsClear, getVisualLength());
         text = newText;
     }
 
@@ -91,7 +97,7 @@ public:
         if (pair >= 0) {
             color_pair = pair;
         } else {
-            std::fprintf(stderr, "Invalid color pair: %d\n", pair);
+            std::println(stderr, "Invalid color pair: {}", pair);
         }
     }
 
@@ -122,12 +128,12 @@ public:
     }
 
     void clear() {
-        needsClear = true;
+        needsClear = std::max(needsClear, getVisualLength());
     }
 
     void reset() {
         clear();
-        std::visit([](auto& str) { str.clear(); }, text);
+        clearStr = true;
     }
 };
 
