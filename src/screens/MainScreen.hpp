@@ -63,25 +63,28 @@ class MainScreen : public Screen {
     }
 
     void rotateWindows() {
-        (windows.at(activeWindow).main.get())->disable();
-        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).inactiveColor);
+        WindowGroup w = windows.at(activeWindow);
+        (w.main.get())->disable();
+        (w.sidebar.get())->setColorPair(w.inactiveColor);
         activeWindow = Subwindows((activeWindow + 1) % windows.size());
-        (windows.at(activeWindow).main.get())->enable();
-        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).activeColor);
+        w = windows.at(activeWindow);
+        (w.main.get())->enable();
+        (w.sidebar.get())->setColorPair(w.activeColor);
     }
 
     void switchWindow(Subwindows target) {
+        WindowGroup w = windows.at(activeWindow);
         if (target == activeWindow) { return; }
-        (windows.at(activeWindow).main.get())->disable();
-        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).inactiveColor);
+        (w.main.get())->disable();
+        (w.sidebar.get())->setColorPair(w.inactiveColor);
         activeWindow = target;
-        (windows.at(activeWindow).main.get())->enable();
-        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).activeColor);
+        w = windows.at(activeWindow);
+        (w.main.get())->enable();
+        (w.sidebar.get())->setColorPair(w.activeColor);
     }
 
     void refreshInventoryCounts() {
-        if (!inventory)
-            return;
+        if (!inventory) { return; }
 
         auto lockedInventory = inventory->synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
