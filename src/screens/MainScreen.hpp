@@ -10,9 +10,11 @@
 #include <cmath>
 #include <cstddef>
 #include <format>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <print>
+#include <unordered_map>
 
 class MainScreen : public Screen {
   private:
@@ -38,17 +40,18 @@ class MainScreen : public Screen {
         UPGRADES = 1
     };
     struct WindowGroup {
-        WindowPtr* main;
-        WindowPtr* sidebar;
+        std::reference_wrapper<WindowPtr> main;
+        std::reference_wrapper<WindowPtr> sidebar;
         int activeColor;
         int inactiveColor;
+        WindowGroup() = delete; // delete default constructor: invalid with std::reference_wrapper
+        WindowGroup(WindowPtr& m, WindowPtr& s, int a, int i)
+        : main(m), sidebar(s), activeColor(a), inactiveColor(i) {}
     };
     
-    std::map<Subwindows, WindowGroup> windows = {
-        {CRAFTING, {&craftingWindow, &sidebarCraftingWindow, 
-            GAME_COLORS::YELLOW_GRAY, GAME_COLORS::YELLOW_BLACK}},
-        {UPGRADES, {&upgradesWindow, &sidebarUpgradesWindow, 
-            GAME_COLORS::RED_GRAY, GAME_COLORS::RED_BLACK}}
+    std::unordered_map<Subwindows, WindowGroup> windows = {
+        {CRAFTING, WindowGroup(craftingWindow, sidebarCraftingWindow, GAME_COLORS::YELLOW_GRAY, GAME_COLORS::YELLOW_BLACK)},
+        {UPGRADES, WindowGroup(upgradesWindow, sidebarUpgradesWindow, GAME_COLORS::RED_GRAY, GAME_COLORS::RED_BLACK)}
     };
     Subwindows activeWindow = CRAFTING;
 
@@ -58,20 +61,20 @@ class MainScreen : public Screen {
     }
 
     void rotateWindows() {
-        (*windows[activeWindow].main)->disable();
-        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].inactiveColor);
+        (windows.at(activeWindow).main.get())->disable();
+        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).inactiveColor);
         activeWindow = Subwindows((activeWindow + 1) % windows.size());
-        (*windows[activeWindow].main)->enable();
-        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].activeColor);
+        (windows.at(activeWindow).main.get())->enable();
+        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).activeColor);
     }
 
     void switchWindow(Subwindows target) {
         if (target == activeWindow) { return; }
-        (*windows[activeWindow].main)->disable();
-        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].inactiveColor);
+        (windows.at(activeWindow).main.get())->disable();
+        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).inactiveColor);
         activeWindow = target;
-        (*windows[activeWindow].main)->enable();
-        (*windows[activeWindow].sidebar)->setColorPair(windows[activeWindow].activeColor);
+        (windows.at(activeWindow).main.get())->enable();
+        (windows.at(activeWindow).sidebar.get())->setColorPair(windows.at(activeWindow).activeColor);
     }
 
     void refreshInventoryCounts() {
