@@ -12,6 +12,7 @@ types of games that would use this library
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <compare>
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
@@ -276,13 +277,6 @@ public:
     normalize();
   }
 
-  // constexpr BigNum(const intmax_t val) {
-  //     m = static_cast<man_t>(val);
-  //     e = 0;
-  //     if (val == 0) { e = 0; } // For 0, set exponent to 0
-  //     normalize();
-  // }
-
   constexpr BigNum(const std::string_view &str) { parseStr(str); }
 
   // Default methods to satisfy concepts
@@ -291,10 +285,6 @@ public:
   constexpr BigNum &operator=(const BigNum &) = default; // Copy assignment
   constexpr BigNum(BigNum &&) = default;                 // Move constructor
   constexpr BigNum &operator=(BigNum &&) = default;      // Move assignment
-
-  // Equality operator (only use this under the assumption that the numbers are
-  // already normalized)
-  constexpr bool operator==(const BigNum &other) const = default;
 
   ~BigNum() = default; // Destructor
 
@@ -415,11 +405,11 @@ public:
     }
     // Divisor is larger than dividend, result is 0
     if (b.e > e) {
-      return BigNum(static_cast<intmax_t>(0));
+      return BigNum(static_cast<man_t>(0));
     }
     // Any number less than 1 is considered 0
     if (b.e == e && std::abs(m / b.m) < 1) {
-      return BigNum(static_cast<intmax_t>(0));
+      return BigNum(static_cast<man_t>(0));
     }
     // Perform division
     return BigNum(m / b.m, e - b.e);
@@ -428,7 +418,7 @@ public:
   constexpr BigNum abs() const { return BigNum(std::abs(m), e); }
 
   constexpr BigNum negate() const {
-    return mul(BigNum(static_cast<intmax_t>(-1)));
+    return mul(BigNum(static_cast<man_t>(-1)));
   }
 
   constexpr BigNum &operator+=(const BigNum &b) {
@@ -482,64 +472,64 @@ public:
   constexpr BigNum operator+(const std::string_view &other) const {
     return add(BigNum(other));
   }
-  constexpr BigNum operator+(const intmax_t other) const {
+  constexpr BigNum operator+(const man_t other) const {
     return add(BigNum(other));
   }
   constexpr BigNum operator-(const BigNum &other) const { return sub(other); }
   constexpr BigNum operator-(const std::string_view &other) const {
     return sub(BigNum(other));
   }
-  constexpr BigNum operator-(const intmax_t other) const {
+  constexpr BigNum operator-(const man_t other) const {
     return sub(BigNum(other));
   }
   constexpr BigNum operator*(const BigNum &other) const { return mul(other); }
   constexpr BigNum operator*(const std::string_view &other) const {
     return mul(BigNum(other));
   }
-  constexpr BigNum operator*(const intmax_t other) const {
+  constexpr BigNum operator*(const man_t other) const {
     return mul(BigNum(other));
   }
   constexpr BigNum operator/(const BigNum &other) const { return div(other); }
   constexpr BigNum operator/(const std::string_view &other) const {
     return div(BigNum(other));
   }
-  constexpr BigNum operator/(const intmax_t other) const {
+  constexpr BigNum operator/(const man_t other) const {
     return div(BigNum(other));
   }
   constexpr BigNum operator-() const { return negate(); }
   constexpr BigNum &operator+=(const std::string_view &b) {
     return *this += BigNum(b);
   }
-  constexpr BigNum &operator+=(const intmax_t b) { return *this += BigNum(b); }
+  constexpr BigNum &operator+=(const man_t b) { return *this += BigNum(b); }
   constexpr BigNum &operator-=(const BigNum &b) {
     return *this += BigNum(b.m * -1, b.e);
   }
   constexpr BigNum &operator-=(const std::string_view &b) {
     return *this -= BigNum(b);
   }
-  constexpr BigNum &operator-=(const intmax_t b) { return *this -= BigNum(b); }
+  constexpr BigNum &operator-=(const man_t b) { return *this -= BigNum(b); }
   constexpr BigNum &operator*=(const std::string_view &b) {
     return *this *= BigNum(b);
   }
-  constexpr BigNum &operator*=(const intmax_t b) { return *this *= BigNum(b); }
+  constexpr BigNum &operator*=(const man_t b) { return *this *= BigNum(b); }
   constexpr BigNum &operator/=(const std::string_view &b) {
     return *this /= BigNum(b);
   }
-  constexpr BigNum &operator/=(const intmax_t b) { return *this /= BigNum(b); }
+  constexpr BigNum &operator/=(const man_t b) { return *this /= BigNum(b); }
   constexpr BigNum &operator++() {
-    return *this += BigNum(static_cast<intmax_t>(1));
+    return *this += BigNum(static_cast<man_t>(1));
   }
   constexpr BigNum operator++(int) {
     BigNum temp(*this);
-    *this += BigNum(static_cast<intmax_t>(1));
+    *this += BigNum(static_cast<man_t>(1));
     return temp;
   }
   constexpr BigNum &operator--() {
-    return *this -= BigNum(static_cast<intmax_t>(1));
+    return *this -= BigNum(static_cast<man_t>(1));
   }
   constexpr BigNum operator--(int) {
     BigNum temp(*this);
-    *this -= BigNum(static_cast<intmax_t>(1));
+    *this -= BigNum(static_cast<man_t>(1));
     return temp;
   }
 
@@ -551,89 +541,47 @@ public:
   static constexpr BigNum &max(BigNum &a, BigNum &b) { return a > b ? a : b; }
   static constexpr BigNum &min(BigNum &a, BigNum &b) { return a < b ? a : b; }
 
-  constexpr int compare(const BigNum &b) const {
-
-    // We do not need to normalize here, as we assume the numbers are already
-    // normalized BigNum a = *this; a.normalize(); b.normalize();
-
+  constexpr std::partial_ordering operator<=>(const BigNum &b) const {
+    if (is_nan() || b.is_nan())
+      return std::partial_ordering::unordered;
+  
+    if (is_inf() && b.is_inf())
+      return std::partial_ordering::equivalent;
+  
     if (m == b.m && e == b.e)
-      return 0;
-    if (is_positive() && b.is_negative())
-      return 1;
-    if (is_negative() && b.is_positive())
-      return -1;
-    if (is_positive() && b.is_positive() && e > b.e)
-      return 1;
-    if (is_positive() && b.is_positive() && e < b.e)
-      return -1;
-    if (is_negative() && b.is_negative() && e > b.e)
-      return -1;
-    if (is_negative() && b.is_negative() && e < b.e)
-      return 1;
-    if (is_positive() && m > b.m)
-      return 1;
-    if (is_positive() && m < b.m)
-      return -1;
-    if (is_negative() && m > b.m)
-      return -1;
-    if (is_negative() && m < b.m)
-      return 1;
-    return 0;
+      return std::partial_ordering::equivalent;
+  
+    const bool a_pos = is_positive();
+    const bool b_pos = b.is_positive();
+  
+    if (a_pos && !b_pos)
+      return std::partial_ordering::greater;
+    if (!a_pos && b_pos)
+      return std::partial_ordering::less;
+  
+    // At this point: both have the same sign (positive or negative)
+    if (a_pos) {
+      if (e > b.e) return std::partial_ordering::greater;
+      if (e < b.e) return std::partial_ordering::less;
+      if (m > b.m) return std::partial_ordering::greater;
+      return std::partial_ordering::less; // m != b.m, and m < b.m
+    } else {
+      if (e > b.e) return std::partial_ordering::less;
+      if (e < b.e) return std::partial_ordering::greater;
+      if (m > b.m) return std::partial_ordering::less;
+      return std::partial_ordering::greater; // m != b.m, and m < b.m
+    }
   }
+  // Equality operator (only use this under the assumption that the numbers are
+  // already normalized)
+  constexpr bool operator==(const BigNum &other) const = default;
 
-  // Comparison operator overloads
-  constexpr bool operator<(const BigNum &other) const {
-    return compare(other) < 0;
+  constexpr std::partial_ordering
+  operator<=>(const std::string_view &other) const {
+    return *this <=> BigNum(other);
   }
-  constexpr bool operator<(const std::string_view &other) const {
-    return compare(BigNum(other)) < 0;
-  }
-  constexpr bool operator<(const intmax_t other) const {
-    return compare(BigNum(other)) < 0;
-  }
-  constexpr bool operator<=(const BigNum &other) const {
-    return compare(other) <= 0;
-  }
-  constexpr bool operator<=(const std::string_view &other) const {
-    return compare(BigNum(other)) <= 0;
-  }
-  constexpr bool operator<=(const intmax_t other) const {
-    return compare(BigNum(other)) <= 0;
-  }
-  constexpr bool operator>(const BigNum &other) const {
-    return compare(other) > 0;
-  }
-  constexpr bool operator>(const std::string_view &other) const {
-    return compare(BigNum(other)) > 0;
-  }
-  constexpr bool operator>(const intmax_t other) const {
-    return compare(BigNum(other)) > 0;
-  }
-  constexpr bool operator>=(const BigNum &other) const {
-    return compare(other) >= 0;
-  }
-  constexpr bool operator>=(const std::string_view &other) const {
-    return compare(BigNum(other)) >= 0;
-  }
-  constexpr bool operator>=(const intmax_t other) const {
-    return compare(BigNum(other)) >= 0;
-  }
-  // bool operator==(const BigNum& other) const { return compare(other) == 0; }
-  // // Replaced by default operator==
-  constexpr bool operator==(const std::string_view &other) const {
-    return compare(BigNum(other)) == 0;
-  }
-  constexpr bool operator==(const intmax_t other) const {
-    return compare(BigNum(other)) == 0;
-  }
-  constexpr bool operator!=(const BigNum &other) const {
-    return compare(other) != 0;
-  }
-  constexpr bool operator!=(const std::string_view &other) const {
-    return compare(BigNum(other)) != 0;
-  }
-  constexpr bool operator!=(const intmax_t other) const {
-    return compare(BigNum(other)) != 0;
+  constexpr std::partial_ordering operator<=>(const man_t other) const {
+    return *this <=> BigNum(other);
   }
 
   // Conversion methods
@@ -769,13 +717,13 @@ public:
   constexpr BigNum pow(double power) const {
     // Special cases
     if (power == 0.0) {
-      return BigNum(static_cast<intmax_t>(1));
+      return BigNum(static_cast<man_t>(1));
     }
     if (m == 0) {
       if (power < 0) {
         throw std::domain_error("Cannot raise 0 to a negative power");
       }
-      return BigNum(static_cast<intmax_t>(0));
+      return BigNum(static_cast<man_t>(0));
     }
 
     // When the mantissa is negative
@@ -799,7 +747,7 @@ public:
     auto log = log10();
     if (!log) {
       // std::cerr << "Logarithm out of bounds" << std::endl;
-      return BigNum(static_cast<intmax_t>(0));
+      return BigNum(static_cast<man_t>(0));
     }
 
     // Calculate new logarithm
@@ -808,7 +756,7 @@ public:
     // Check if result would be too small
     if (std::abs(new_log) < std::numeric_limits<double>::min_exponent10) {
       // std::cerr << "Result too small" << std::endl;
-      return BigNum(static_cast<intmax_t>(0));
+      return BigNum(static_cast<man_t>(0));
     }
 
     // Split into mantissa and exponent
@@ -829,7 +777,7 @@ public:
       throw std::domain_error("Cannot take the zeroth root");
     } // Handle zero early
     if (m == 0) {
-      return BigNum(static_cast<intmax_t>(0));
+      return BigNum(static_cast<man_t>(0));
     }
     // Handle negative numbers: Only allow odd roots for negative bases
     bool is_negative = (m < 0);
