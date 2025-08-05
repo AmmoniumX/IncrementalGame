@@ -4,9 +4,10 @@
 #include <string>
 #include <memory>
 #include <iostream>
+#include <initializer_list>
 #include <print>
 #include <vector>
-#include <functional>
+#include <span>
 
 #include "../setup.hpp"
 #include "./Text.hpp"
@@ -138,15 +139,29 @@ public:
     }
 
     std::shared_ptr<Text> putText(int textY, int textX, const std::string& text, int text_color_pair=0) {
-        auto textObj = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
-        texts.push_back(textObj);
-        return textObj;
+        auto t = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
+        texts.push_back(t);
+        return t;
     }
 
     std::shared_ptr<Text> putText(int textY, int textX, const std::wstring& text, int text_color_pair=0) {
-        auto textObj = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
-        texts.push_back(textObj);
-        return textObj;
+        auto t = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
+        texts.push_back(t);
+        return t;
+    }
+
+    template<TextString T>
+    std::shared_ptr<Text> putText(int textY, int textX, const std::span<const Text::TextChunk<T>> chunks) {
+        auto t = std::make_shared<Text>(textY, textX, chunks, win);
+        texts.push_back(t);
+        return t;
+    }
+
+    template<TextString T>
+    std::shared_ptr<Text> putText(int textY, int textX, const std::initializer_list<const Text::TextChunk<T>> chunks) {
+        auto t = std::make_shared<Text>(textY, textX, chunks, win);
+        texts.push_back(t);
+        return t;
     }
 
     std::shared_ptr<Window> createSubwindow(int subY, int subX, int subWidth, int subHeight, 

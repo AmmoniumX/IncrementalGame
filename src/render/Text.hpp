@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdio>
 #include <algorithm>
 #include <string>
@@ -12,20 +13,25 @@
 #include <ranges>
 #include <numeric>
 #include <concepts>
+#include <span>
+#include <initializer_list>
 
 template<typename T>
 concept TextString = std::same_as<T, std::string> || std::same_as<T, std::wstring>;
 
 class Text {
-private:
-    int y, x;
-
+public:
     template<TextString str_t>
     struct TextChunk {
         int color_pair = 0;
         str_t text = str_t();
     };
-    std::variant<std::vector<TextChunk<std::string>>, std::vector<TextChunk<std::wstring>>> textChunks;
+private:
+    int y, x;
+
+    using TextChunks = std::variant<std::vector<TextChunk<std::string>>, std::vector<TextChunk<std::wstring>>>;
+
+    TextChunks textChunks;
 
     std::shared_ptr<WINDOW> win;
     size_t needsClear = 0;
@@ -50,6 +56,15 @@ private:
         needsClear = 0;
     }
 
+    static size_t getVisualLengthOf(TextChunk<std::string> chunk) {
+        return chunk.text.size();
+    }
+
+    static size_t getVisualLengthOf(TextChunk<std::wstring> chunk) {
+        return static_cast<size_t>(
+            wcswidth(chunk.text.c_str(), chunk.text.size())
+        );
+    }
 
 public:
     Text(int y, int x, const std::string& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
@@ -58,7 +73,14 @@ public:
     Text(int y, int x, const std::wstring& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
         : y(y), x(x), textChunks(std::vector<TextChunk<std::wstring>>({{color_pair, txt}})), win(win) {}
 
-    // TODO clean later
+    template<TextString T>
+    Text(int y, int x, const std::span<const TextChunk<T>>& chunks, std::shared_ptr<WINDOW> win = nullptr)
+        : y(y), x(x), textChunks(std::vector<TextChunk<T>>(chunks.begin(), chunks.end())), win(win) {}
+
+    template<TextString T>
+    Text(int y, int x, const std::initializer_list<const TextChunk<T>>& chunks, std::shared_ptr<WINDOW> win = nullptr)
+        : y(y), x(x), textChunks(std::vector<TextChunk<T>>(chunks.begin(), chunks.end())), win(win) {}
+
     size_t getLength() const {
         return std::visit([](const auto& chunks) {
             auto view = chunks 
@@ -71,25 +93,11 @@ public:
 
     size_t getVisualLength() const {
         return std::visit([](const auto& chunks) {
-            using T = std::decay_t<decltype(chunks)>;
-            using T_Str = std::conditional_t<
-                std::is_same_v<T, std::vector<TextChunk<std::wstring>>>,
-                std::wstring,
-                std::string
-            >;
-            if constexpr (std::is_same_v<T_Str, std::wstring>) {
-                auto view = chunks 
-                    | std::views::transform([](const auto& chunk) {
-                        return static_cast<size_t>(wcswidth(chunk.text.c_str(), chunk.text.size()));
-                    });
-                return std::accumulate(view.begin(), view.end(), static_cast<size_t>(0));
-            } else {
-                auto view = chunks 
-                    | std::views::transform([](const auto& chunk) {
-                        return chunk.text.size();
-                    });
-                return std::accumulate(view.begin(), view.end(), static_cast<size_t>(0));
-            }
+            auto view = chunks 
+                | std::views::transform([](const auto& chunk) {
+                    return getVisualLengthOf(chunk);
+                });
+            return std::accumulate(view.begin(), view.end(), static_cast<size_t>(0));
         }, textChunks);
     }
 
@@ -154,19 +162,22 @@ public:
                 std::string
             >;
 
+            size_t dX = 0;
             for (const auto& chunk : chunks) {
                 if (chunk.color_pair > 0) {
                     wattron(w, COLOR_PAIR(chunk.color_pair));
                 }
                 if constexpr (std::is_same_v<T_Str, std::wstring>) {
-                    mvwaddwstr(w, y, x, chunk.text.c_str());
+                    mvwaddwstr(w, y, x+dX, chunk.text.c_str());
                 } else {
-                    mvwaddstr(w, y, x, chunk.text.c_str());
+                    mvwaddstr(w, y, x+dX, chunk.text.c_str());
                 }
 
                 if (chunk.color_pair > 0) {
                     wattroff(w, COLOR_PAIR(chunk.color_pair));
                 }
+
+                dX += getVisualLengthOf(chunk);
             }
 
         }, textChunks);

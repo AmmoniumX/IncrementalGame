@@ -169,7 +169,10 @@ class MainScreen : public Screen {
         craftingOptions.emplace(Inventory::Items::COPPER,
             craftingWindow->putText(2, 1, "[2] Copper Ingots"));
         craftingOptions.emplace(Inventory::Items::IRON_GEAR,
-            craftingWindow->putText(3, 1, "[3] Iron Gear (requires: 2 Iron Ingot)"));
+            craftingWindow->putText<std::string>(3, 1, {
+                            {GAME_COLORS::YELLOW_BLACK, "[3] Iron Gear "}, 
+                            {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Ingot)"}
+                                }));
 
         activeWindow = CRAFTING;
 
