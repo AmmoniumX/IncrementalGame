@@ -44,11 +44,10 @@ public:
     
     TextPtr setTitle(const std::string& text, Alignment alignment=Alignment::LEFT, int color_pair=0, int offset=0) {
         if (title) {
-            title->setText(text, true);
+            title->setText(text, true, color_pair);
         } else {
             title = putText(0, 0, text, color_pair);
         }
-        title->setColorPair(color_pair);
         switch (alignment) {
             case Alignment::LEFT:
                 title->setX(1 + offset);

@@ -17,7 +17,7 @@ class Inventory : public RegisteredResource<Inventory> {
     struct Items {
         static constexpr const std::string IRON = "Iron";
         static constexpr const std::string COPPER = "Copper";
-        static constexpr const std::string IRON_ROD = "Iron Rod";
+        static constexpr const std::string IRON_GEAR = "Iron Gear";
         static constexpr const std::string COPPER_WIRE = "Copper Wire";
         static constexpr const std::string MOTOR = "Motor";
     };

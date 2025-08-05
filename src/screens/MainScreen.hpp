@@ -15,6 +15,7 @@
 #include <map>
 #include <print>
 #include <unordered_map>
+#include <variant>
 
 class MainScreen : public Screen {
   private:
@@ -127,8 +128,9 @@ class MainScreen : public Screen {
         // Set display lines
         for (int i = 0; i < 3; i++) {
             auto oldText = inventoryContents[i]->getText();
-            if (oldText) {
-                if (*oldText == display_lines[i]) { return; }
+            auto oldTextStr = std::get_if<std::string>(&oldText);
+            if (oldTextStr) {
+                if (*oldTextStr == display_lines[i]) { return; }
             }
             inventoryContents[i]->setText(display_lines[i], true);
         }
@@ -163,10 +165,11 @@ class MainScreen : public Screen {
         (void)craftingWindow->setTitle("Crafting", Window::Alignment::LEFT,
                                        GAME_COLORS::YELLOW_BLACK, 1);
         craftingOptions.emplace(Inventory::Items::IRON,
-                                craftingWindow->putText(1, 1, "[1] Iron Ingots"));
-        craftingOptions.emplace(
-            Inventory::Items::COPPER,
+            craftingWindow->putText(1, 1, "[1] Iron Ingots"));
+        craftingOptions.emplace(Inventory::Items::COPPER,
             craftingWindow->putText(2, 1, "[2] Copper Ingots"));
+        craftingOptions.emplace(Inventory::Items::IRON_GEAR,
+            craftingWindow->putText(3, 1, "[3] Iron Gear (requires: 2 Iron Ingot)"));
 
         activeWindow = CRAFTING;
 

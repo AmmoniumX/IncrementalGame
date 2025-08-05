@@ -2,22 +2,31 @@
 
 #include <cstdio>
 #include <algorithm>
-#include <ostream>
 #include <string>
-#include <variant>
 #include <memory>
-#include <optional>
-#include <locale.h>
+#include <variant>
+#include <vector>
 #include <ncursesw/ncurses.h>
 #include <cwchar>
 #include <print>
-#include <iostream>
+#include <ranges>
+#include <numeric>
+#include <concepts>
+
+template<typename T>
+concept TextString = std::same_as<T, std::string> || std::same_as<T, std::wstring>;
 
 class Text {
 private:
     int y, x;
-    std::variant<std::string, std::wstring> text;
-    int color_pair = 0;
+
+    template<TextString str_t>
+    struct TextChunk {
+        int color_pair = 0;
+        str_t text = str_t();
+    };
+    std::variant<std::vector<TextChunk<std::string>>, std::vector<TextChunk<std::wstring>>> textChunks;
+
     std::shared_ptr<WINDOW> win;
     size_t needsClear = 0;
     bool clearStr = false;
@@ -31,8 +40,12 @@ private:
         std::string blank(needsClear, ' ');
         mvwaddstr(getWin(), y, x, blank.c_str());
         if (clearStr) {
-            std::visit([](auto& str) { str.clear(); }, text);
-            clearStr = false;
+            std::visit([&](auto& chunks) {
+                for (auto &chunk : chunks) {
+                    chunk.text.clear();
+                    clearStr = false;
+                }
+            }, textChunks);
         }
         needsClear = 0;
     }
@@ -40,91 +53,124 @@ private:
 
 public:
     Text(int y, int x, const std::string& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
-        : y(y), x(x), text(txt), color_pair(color_pair), win(win) {}
+        : y(y), x(x), textChunks(std::vector<TextChunk<std::string>>({{color_pair, txt}})), win(win) {}
 
     Text(int y, int x, const std::wstring& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
-        : y(y), x(x), text(txt), color_pair(color_pair), win(win) {}
+        : y(y), x(x), textChunks(std::vector<TextChunk<std::wstring>>({{color_pair, txt}})), win(win) {}
 
+    // TODO clean later
     size_t getLength() const {
-        return std::visit([](const auto& str) { return str.size(); }, text);
+        return std::visit([](const auto& chunks) {
+            auto view = chunks 
+                | std::views::transform([](const auto& chunk) {
+                    return chunk.text.size(); });
+            return std::accumulate(view.begin(), view.end(), static_cast<size_t>(0));
+
+        }, textChunks);
     }
 
     size_t getVisualLength() const {
-        return std::visit([](const auto& str) {
-            if constexpr (std::is_same_v<decltype(str), const std::wstring&>) {
-                return static_cast<size_t>(wcswidth(str.c_str(), str.size()));
+        return std::visit([](const auto& chunks) {
+            using T = std::decay_t<decltype(chunks)>;
+            using T_Str = std::conditional_t<
+                std::is_same_v<T, std::vector<TextChunk<std::wstring>>>,
+                std::wstring,
+                std::string
+            >;
+            if constexpr (std::is_same_v<T_Str, std::wstring>) {
+                auto view = chunks 
+                    | std::views::transform([](const auto& chunk) {
+                        return static_cast<size_t>(wcswidth(chunk.text.c_str(), chunk.text.size()));
+                    });
+                return std::accumulate(view.begin(), view.end(), static_cast<size_t>(0));
             } else {
-                return str.size();
+                auto view = chunks 
+                    | std::views::transform([](const auto& chunk) {
+                        return chunk.text.size();
+                    });
+                return std::accumulate(view.begin(), view.end(), static_cast<size_t>(0));
             }
-        }, text);
-    }
-
-    bool isWide() const {
-        return std::holds_alternative<std::wstring>(text);
+        }, textChunks);
     }
 
     bool isEmpty() const {
-        return std::visit([](const auto& str) { return str.empty(); }, text);
-    }
-
-    std::optional<std::string> getText() const {
-        if (auto p = std::get_if<std::string>(&text)) return *p;
-        return std::nullopt;
-    }
-
-    std::optional<std::wstring> getWText() const {
-        if (auto p = std::get_if<std::wstring>(&text)) return *p;
-        return std::nullopt;
+        return std::visit([](const auto& chunks) { 
+            return chunks.size() <= 0; 
+        }, textChunks);
     }
 
     int getX() const { return x; }
     int getY() const { return y; }
 
-    void setText(const std::string& newText, bool clear = false) {
+    void setText(const std::string& new_text, bool clear = false, int color_pair = 0) {
         if (clear) needsClear = std::max(needsClear, getVisualLength());
-        text = newText;
+        textChunks = std::vector<TextChunk<std::string>>({{color_pair, new_text}});
     }
 
-    void setText(const std::wstring& newText, bool clear = false) {
+    void setText(const std::wstring& new_text, bool clear = false, int color_pair = 0) {
         if (clear) needsClear = std::max(needsClear, getVisualLength());
-        text = newText;
+        textChunks = std::vector<TextChunk<std::wstring>>({{color_pair, new_text}});
+    }
+
+    std::variant<std::string, std::wstring> getText() {
+        return std::visit([](const auto& chunks) -> std::variant<std::string, std::wstring> {
+            using T = std::decay_t<decltype(chunks)>;
+            using T_Str = std::conditional_t<
+                std::is_same_v<T, std::vector<TextChunk<std::wstring>>>,
+                std::wstring,
+                std::string
+            >;
+
+            if constexpr (std::is_same_v<T_Str, std::wstring>) {
+                std::wstring s;
+                for (const auto& chunk : chunks) {
+                    s.append(chunk.text);
+                }
+                return s;
+            } else {
+                std::string s;
+                for (const auto& chunk : chunks) {
+                    s.append(chunk.text);
+                }
+                return s;
+            }
+
+        }, textChunks);
     }
 
     void setX(int px) { x = px; }
     void setY(int py) { y = py; }
-
-    void setColorPair(int pair) {
-        if (pair >= 0) {
-            color_pair = pair;
-        } else {
-            std::println(stderr, "Invalid color pair: {}", pair);
-        }
-    }
-
-    int getColorPair() const { return color_pair; }
 
     void render() {
         doClear();
         if (isEmpty()) return;
 
         WINDOW* w = getWin();
+        std::visit([&](const auto& chunks) {
+            using T = std::decay_t<decltype(chunks)>;
+            using T_Str = std::conditional_t<
+                std::is_same_v<T, std::vector<TextChunk<std::wstring>>>,
+                std::wstring,
+                std::string
+            >;
 
-        if (color_pair > 0) {
-            wattron(w, COLOR_PAIR(color_pair));
-        }
+            for (const auto& chunk : chunks) {
+                if (chunk.color_pair > 0) {
+                    wattron(w, COLOR_PAIR(chunk.color_pair));
+                }
+                if constexpr (std::is_same_v<T_Str, std::wstring>) {
+                    mvwaddwstr(w, y, x, chunk.text.c_str());
+                } else {
+                    mvwaddstr(w, y, x, chunk.text.c_str());
+                }
 
-        std::visit([&](const auto& str) {
-            using T = std::decay_t<decltype(str)>;
-            if constexpr (std::is_same_v<T, std::string>) {
-                mvwaddstr(w, y, x, str.c_str());
-            } else if constexpr (std::is_same_v<T, std::wstring>) {
-                mvwaddwstr(w, y, x, str.c_str());
+                if (chunk.color_pair > 0) {
+                    wattroff(w, COLOR_PAIR(chunk.color_pair));
+                }
             }
-        }, text);
 
-        if (color_pair > 0) {
-            wattroff(w, COLOR_PAIR(color_pair));
-        }
+        }, textChunks);
+
     }
 
     void clear() {

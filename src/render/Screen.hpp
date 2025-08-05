@@ -3,12 +3,9 @@
 #include <ncursesw/ncurses.h>
 #include <string>
 #include <memory>
-#include <iostream>
 #include <print>
 #include <vector>
-#include <functional>
 
-#include "../setup.hpp"
 #include "./Text.hpp"
 #include "./Window.hpp"
 
