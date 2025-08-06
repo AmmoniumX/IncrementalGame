@@ -6,8 +6,9 @@
 #include <iostream>
 #include <initializer_list>
 #include <print>
-#include <vector>
+#include <list>
 #include <span>
+#include <functional>
 
 #include "../setup.hpp"
 #include "./Text.hpp"
@@ -24,16 +25,28 @@
 * @param color_pair The color pair to use for the window background (default is 0, which means no color).
 */
 class Window {
+public:
+    struct WindowDeleter {
+        void operator()(WINDOW* win) const {
+            if (win) {
+                delwin(win);
+            }
+        }
+    };
+    typedef std::unique_ptr<WINDOW, WindowDeleter> WinUniqPtr;
 private:
-    std::shared_ptr<WINDOW> win;
-    std::vector<std::shared_ptr<Text>> texts; // Window-level texts
-    std::vector<std::shared_ptr<Window>> subwindows; // Subwindows within this window
-    int x, y, width, height;
+    WinUniqPtr win;
+    std::list<Text> texts; // Window-level texts
+    std::list<Window> subwindows; // Subwindows within this window
+    [[maybe_unused]] int x, y, width, height;
     bool visible;
     int color_pair;
-    std::shared_ptr<WINDOW> parentWin;
-    TextPtr title = nullptr;
+    WINDOW *parentWin = nullptr;
+    Text *title = nullptr;
 public:
+    static WinUniqPtr newWin(int height, int width, int y, int x) {
+        return WinUniqPtr(newwin(height, width, y, x));
+    }
 
     virtual ~Window() = default;
 
@@ -43,11 +56,11 @@ public:
         RIGHT
     };
     
-    TextPtr setTitle(const std::string& text, Alignment alignment=Alignment::LEFT, int color_pair=0, int offset=0) {
+    std::reference_wrapper<Text> setTitle(const std::string& text, Alignment alignment=Alignment::LEFT, int color_pair=0, int offset=0) {
         if (title) {
             title->setText(text, true, color_pair);
         } else {
-            title = putText(0, 0, text, color_pair);
+            title = &putText(0, 0, text, color_pair).get();
         }
         switch (alignment) {
             case Alignment::LEFT:
@@ -65,17 +78,46 @@ public:
             }
         }
         title->setY(0);
-        return title;
+        return std::ref(*title);
     }
 
-    Window(int x, int y, int width, int height, bool visible, int color_pair=0, std::shared_ptr<WINDOW> parentWin=nullptr) 
-    : x(x), y(y), width(width), height(height), visible(visible), color_pair(color_pair), parentWin(parentWin) {
-        win = std::shared_ptr<WINDOW>(newwin(height, width, y, x), [](WINDOW* w) { delwin(w); });
-
+    Window(int x, int y, int width, int height, bool visible, int color_pair=0, WINDOW *parentWin=nullptr)
+    : win(newWin(height, width, y, x)), x(x), y(y), width(width), height(height), visible(visible),
+      color_pair(color_pair), parentWin(parentWin)
+    {
         if (color_pair > 0) {
-            wbkgd(win.get(), COLOR_PAIR(color_pair)); // Set background color if color is set
+            wbkgd(win.get(), COLOR_PAIR(color_pair));
         }
     }
+
+    // move constructor for allowing subwindows.emplace_back()
+    Window(Window&& other) noexcept 
+    : win(std::move(other.win)), x(other.x), y(other.y), width(other.width), height(other.height), 
+      visible(other.visible), color_pair(other.color_pair), parentWin(other.parentWin)
+    {
+        if (color_pair > 0) {
+            wbkgd(win.get(), COLOR_PAIR(color_pair));
+        }
+    }
+
+    // move assignment operator
+    Window& operator=(Window&& other) noexcept {
+        if (this != &other) {
+            win = std::move(other.win);
+            x = other.x;
+            y = other.y;
+            width = other.width;
+            height = other.height;
+            visible = other.visible;
+            color_pair = other.color_pair;
+            parentWin = other.parentWin;
+        }
+        return *this;
+    }
+    
+    // Delete copy constructor and copy assignment
+    Window(const Window&) = delete;
+    Window& operator=(const Window&) = delete;
 
     void setColorPair(int col) {
         color_pair = col;
@@ -86,7 +128,7 @@ public:
     void clearWindow() {
         // Temporarily set window color to the parent window's color
         if (parentWin) {
-            wbkgd(win.get(), getbkgd(parentWin.get()));
+            wbkgd(win.get(), getbkgd(parentWin));
         } else {
             wbkgd(win.get(), COLOR_PAIR(GAME_COLORS::DEFAULT)); // Default background
         }
@@ -95,8 +137,8 @@ public:
         // Restore the original color
         wbkgd(win.get(), COLOR_PAIR(color_pair));
         // Overwrite the text with spaces
-        for (const auto& text : texts) {
-            text->clear();
+        for (auto& text : texts) {
+            text.clear();
         }
     }
     void enable() { 
@@ -125,53 +167,43 @@ public:
         }
 
         // Render the texts
-        for (const auto& text : texts) {
-            text->render();
+        for (auto& text : texts) {
+            text.render();
         }
 
         // Render subwindows
-        for (const auto& subwindow : subwindows) {
-            subwindow->render();
+        for (auto& subwindow : subwindows) {
+            subwindow.render();
         }
 
         // Refresh the window
         wrefresh(win.get());
     }
 
-    std::shared_ptr<Text> putText(int textY, int textX, const std::string& text, int text_color_pair=0) {
-        auto t = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
-        texts.push_back(t);
-        return t;
-    }
-
-    std::shared_ptr<Text> putText(int textY, int textX, const std::wstring& text, int text_color_pair=0) {
-        auto t = std::make_shared<Text>(textY, textX, text, text_color_pair, win);
-        texts.push_back(t);
-        return t;
+    template<TextString T>
+    std::reference_wrapper<Text> putText(int textY, int textX, const T& text, int text_color_pair=0) {
+        texts.emplace_back(textY, textX, text, text_color_pair, win.get());
+        return std::ref(texts.back());
     }
 
     template<TextString T>
-    std::shared_ptr<Text> putText(int textY, int textX, const std::span<const Text::TextChunk<T>> chunks) {
-        auto t = std::make_shared<Text>(textY, textX, chunks, win);
-        texts.push_back(t);
-        return t;
+    std::reference_wrapper<Text> putText(int textY, int textX, const std::span<const Text::TextChunk<T>> chunks) {
+        texts.emplace_back(textY, textX, chunks, win.get());
+        return std::ref(texts.back());
     }
 
     template<TextString T>
-    std::shared_ptr<Text> putText(int textY, int textX, const std::initializer_list<const Text::TextChunk<T>> chunks) {
-        auto t = std::make_shared<Text>(textY, textX, chunks, win);
-        texts.push_back(t);
-        return t;
+    std::reference_wrapper<Text> putText(int textY, int textX, const std::initializer_list<const Text::TextChunk<T>> chunks) {
+        texts.emplace_back(textY, textX, chunks, win.get());
+        return std::ref(texts.back());
     }
 
-    std::shared_ptr<Window> createSubwindow(int subY, int subX, int subWidth, int subHeight, 
+    std::reference_wrapper<Window> createSubwindow(int subY, int subX, int subWidth, int subHeight, 
         bool visible=true, int color_pair=0) {
-
-        auto subwindow = std::make_shared<Window>(subX, subY, subWidth, subHeight, visible, color_pair, win);
-        subwindows.push_back(subwindow);
-        return subwindow;
+        subwindows.emplace_back(subX, subY, subWidth, subHeight, visible, color_pair, win.get());
+        return std::ref(subwindows.back());
     }
 
     virtual void onTick() {}
 };
-typedef std::shared_ptr<Window> WindowPtr;
+

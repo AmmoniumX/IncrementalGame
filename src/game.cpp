@@ -55,9 +55,10 @@ int run(string savefile) {
     setupNcurses();
 
     // Create and setup ScreenManager and Screen
-    ScreenPtr mainScreen = MainScreen::create();
     ScreenManager &manager = ScreenManager::getInstance();
-    manager.changeScreen(mainScreen);
+    std::unique_ptr<Screen> mainScreen = MainScreen::create();
+    std::reference_wrapper<Screen> movedMainScreen = manager.registerScreen(std::move(mainScreen));
+    manager.changeScreen(&movedMainScreen.get());
 
     // Main game loop
     std::println(std::cerr, "Starting game thread...");

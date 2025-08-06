@@ -1,10 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <ncursesw/ncurses.h>
 #include <string>
-#include <memory>
 #include <print>
-#include <vector>
+#include <list>
 
 #include "./Text.hpp"
 #include "./Window.hpp"
@@ -15,29 +15,29 @@
 */
 class Screen {
 private:
-    std::vector<std::shared_ptr<Text>> texts; // Screen-level texts
-    std::vector<std::shared_ptr<Window>> windows; // Screen-level windows
+    std::list<Text> texts; // Screen-level texts
+    std::list<Window> windows; // Screen-level windows
 
 public:
-    std::shared_ptr<Text> putText(int y, int x, const std::string& text, int color_pair=0) {
-        auto textObj = std::make_shared<Text>(y, x, text, color_pair);
-        texts.push_back(textObj);
-        return textObj;
+    virtual ~Screen() = default;
+
+    std::reference_wrapper<Text> putText(int y, int x, const std::string& text, int color_pair=0) {
+        texts.emplace_back(y, x, text, color_pair);
+        return std::ref(texts.back());
     }
 
-    std::shared_ptr<Window> createWindow(int y, int x, int width, int height, bool visible=true, int color_pair=0) {
-        auto window = std::make_shared<Window>(x, y, width, height, visible, color_pair);
-        windows.push_back(window);
-        return window;
+    std::reference_wrapper<Window> createWindow(int y, int x, int width, int height, bool visible=true, int color_pair=0) {
+        windows.emplace_back(x, y, width, height, visible, color_pair, nullptr);
+        return std::ref(windows.back());
     }
 
     void render() {
         // clear();
-        for (const auto& text : texts) {
-            text->render();
+        for (auto& text : texts) {
+            text.render();
         }
-        for (const auto& window : windows) {
-            window->render();
+        for (auto& window : windows) {
+            window.render();
         }
         refresh();
     }
@@ -46,4 +46,4 @@ public:
         return false; // Default behavior: continue the game loop
     }
 };
-typedef std::shared_ptr<Screen> ScreenPtr;
+

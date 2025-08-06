@@ -1,13 +1,11 @@
 #pragma once
 
+#include <functional>
 #include <ncursesw/ncurses.h>
-#include <string>
-#include <iostream>
 #include <print>
+#include <list>
 
 #include "../setup.hpp"
-#include "./Text.hpp"
-#include "./Window.hpp"
 #include "./Screen.hpp"
 
 /*
@@ -16,8 +14,9 @@
 */
 class ScreenManager { // Singleton class
 private:
-    ScreenPtr currentScreen = nullptr;
-    std::shared_ptr<Screen> nextScreen = nullptr;
+    Screen *currentScreen = nullptr;
+    Screen *nextScreen = nullptr;
+    std::list<std::unique_ptr<Screen>> screens;
     bool screenChange = false;
     bool exitRequested = false;
 
@@ -35,13 +34,14 @@ public:
         return instance;
     }
 
-    std::shared_ptr<Screen> getCurrentScreen() const { return currentScreen; }
+    Screen *getCurrentScreen() const { return currentScreen; }
     
-    // void registerScreen(const std::shared_ptr<Screen> screen) {
-    //     loadedScreens.push_back(screen);
-    // }
+    std::reference_wrapper<Screen> registerScreen(std::unique_ptr<Screen> screen) {
+        screens.push_back(std::move(screen));
+        return std::ref(*screens.back().get());
+    }
 
-    void changeScreen(const std::shared_ptr<Screen> screen) {
+    void changeScreen(Screen *screen) {
         nextScreen = screen;
         screenChange = true;
     }

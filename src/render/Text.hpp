@@ -4,7 +4,6 @@
 #include <cstdio>
 #include <algorithm>
 #include <string>
-#include <memory>
 #include <variant>
 #include <vector>
 #include <ncursesw/ncurses.h>
@@ -33,18 +32,14 @@ private:
 
     TextChunks textChunks;
 
-    std::shared_ptr<WINDOW> win;
+    WINDOW *win = stdscr;
     size_t needsClear = 0;
     bool clearStr = false;
-
-    WINDOW* getWin() const {
-        return win ? win.get() : stdscr;
-    }
 
     void doClear() {
         if (needsClear <= 0) { return; }
         std::string blank(needsClear, ' ');
-        mvwaddstr(getWin(), y, x, blank.c_str());
+        mvwaddstr(win, y, x, blank.c_str());
         if (clearStr) {
             std::visit([](auto& chunks) {
                 for (auto &chunk : chunks) {
@@ -68,15 +63,15 @@ private:
 
 public:
     template<TextString T>
-    Text(int y, int x, const T& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
+    Text(int y, int x, const T& txt, int color_pair = 0, WINDOW *win = stdscr)
         : y(y), x(x), textChunks(std::vector<TextChunk<T>>({{color_pair, txt}})), win(win) {}
 
     template<TextString T>
-    Text(int y, int x, const std::span<const TextChunk<T>>& chunks, std::shared_ptr<WINDOW> win = nullptr)
+    Text(int y, int x, const std::span<const TextChunk<T>>& chunks, WINDOW *win = stdscr)
         : y(y), x(x), textChunks(std::vector<TextChunk<T>>(chunks.begin(), chunks.end())), win(win) {}
 
     template<TextString T>
-    Text(int y, int x, const std::initializer_list<const TextChunk<T>>& chunks, std::shared_ptr<WINDOW> win = nullptr)
+    Text(int y, int x, const std::initializer_list<const TextChunk<T>>& chunks, WINDOW *win = stdscr)
         : y(y), x(x), textChunks(std::vector<TextChunk<T>>(chunks.begin(), chunks.end())), win(win) {}
 
     size_t getLength() const {
@@ -147,7 +142,6 @@ public:
         doClear();
         if (isEmpty()) return;
 
-        WINDOW* w = getWin();
         std::visit([&](const auto& chunks) {
             using T = std::decay_t<decltype(chunks)>;
             using T_Str = std::conditional_t<
@@ -159,16 +153,16 @@ public:
             size_t dX = 0;
             for (const auto& chunk : chunks) {
                 if (chunk.color_pair > 0) {
-                    wattron(w, COLOR_PAIR(chunk.color_pair));
+                    wattron(win, COLOR_PAIR(chunk.color_pair));
                 }
                 if constexpr (std::is_same_v<T_Str, std::wstring>) {
-                    mvwaddwstr(w, y, x+dX, chunk.text.c_str());
+                    mvwaddwstr(win, y, x+dX, chunk.text.c_str());
                 } else {
-                    mvwaddstr(w, y, x+dX, chunk.text.c_str());
+                    mvwaddstr(win, y, x+dX, chunk.text.c_str());
                 }
 
                 if (chunk.color_pair > 0) {
-                    wattroff(w, COLOR_PAIR(chunk.color_pair));
+                    wattroff(win, COLOR_PAIR(chunk.color_pair));
                 }
 
                 dX += getVisualLengthOf(chunk);
@@ -188,4 +182,3 @@ public:
     }
 };
 
-using TextPtr = std::shared_ptr<Text>;
