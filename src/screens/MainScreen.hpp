@@ -28,7 +28,7 @@ class MainScreen : public Screen {
 
     Window &inventoryWindow;
     std::array<std::reference_wrapper<Text>, 3> inventoryContents;
-    ResourcePtr inventory;
+    Resource &inventory;
 
     Window &craftingWindow;
     std::map<std::string, std::reference_wrapper<Text>> craftingOptions;
@@ -85,9 +85,8 @@ class MainScreen : public Screen {
     }
 
     void refreshInventoryCounts() {
-        if (!inventory) { return; }
 
-        auto lockedInventory = inventory->synchronize();
+        auto lockedInventory = inventory.synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
 
         const std::map<std::string, BigNum> items = inv->getItems();
@@ -189,7 +188,7 @@ class MainScreen : public Screen {
         refreshInventoryCounts();
 
         // Handle input
-        auto lockedInventory = inventory->synchronize();
+        auto lockedInventory = inventory.synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
         switch (input) {
         case 'q':

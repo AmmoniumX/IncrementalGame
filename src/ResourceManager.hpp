@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <print>
-#include <vector>
+#include <format>
+#include <stdexcept>
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
@@ -11,36 +12,35 @@
 #include <boost/thread/synchronized_value.hpp>
 
 #include "./json.hpp"
-#include "./BigNum.hpp"
 
 using nlohmann::json;
 
-class Resource {
+class _Resource {
 public:
-    virtual ~Resource() = default;
+    virtual ~_Resource() = default;
 
     virtual json serialize() const = 0;
     virtual void deserialize(const json& j) = 0;
     virtual std::string getId() const = 0;
     virtual void onTick(const uint& gameTick) = 0;
 
-    Resource(const Resource&) = delete;
-    Resource& operator=(const Resource&) = delete;
+    _Resource(const _Resource&) = delete;
+    _Resource& operator=(const _Resource&) = delete;
 
 protected:
-    Resource() = default;
+    _Resource() = default;
 };
 
-using ResourcePtr = boost::synchronized_value<Resource*>*;
+using Resource = boost::synchronized_value<_Resource*>;
 class _ResourceManager {
 private:
     _ResourceManager() = default;
 
     // Container of uniquely owned resources
-    std::unordered_map<std::string, std::unique_ptr<Resource>> owned_resources;
+    std::unordered_map<std::string, std::unique_ptr<_Resource>> owned_resources;
 
     // Container of shared pointers to resources, allowing thread-safe access
-    std::unordered_map<std::string, std::unique_ptr<boost::synchronized_value<Resource*>>> owned_synchronized_resources;
+    std::unordered_map<std::string, std::unique_ptr<boost::synchronized_value<_Resource*>>> owned_synchronized_resources;
 
     // Mutex for synchronizing access to the resources
     std::mutex mtx_resources;
@@ -60,11 +60,11 @@ public:
         return result;
     }
 
-    void addResource(const std::string& id, std::unique_ptr<Resource>&& moved_resource) {
+    void addResource(const std::string& id, std::unique_ptr<_Resource>&& moved_resource) {
         std::println(std::cerr, "Registering resource: {}", id);
         std::lock_guard<std::mutex> lock(mtx_resources);
         owned_resources.insert_or_assign(id, std::move(moved_resource));
-        auto resource = std::make_unique<boost::synchronized_value<Resource*>>(owned_resources[id].get());
+        auto resource = std::make_unique<boost::synchronized_value<_Resource*>>(owned_resources[id].get());
         owned_synchronized_resources.insert_or_assign(id, std::move(resource));
     }
 
@@ -72,16 +72,16 @@ public:
     // The internal pointer is a "raw" pointer, which is safe to use as long as the resource is not deleted.
     // This is safe because the ResourceManager owns the resource and guarantees its lifetime, and
     // ResourceManager itself is only destroyed at the end of the program.
-    ResourcePtr getResource(const std::string& resourceId) {
+    Resource &getResource(const std::string& resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         auto it = owned_synchronized_resources.find(resourceId);
         if (it == owned_synchronized_resources.end()) {
-            return nullptr;
+            throw std::runtime_error(std::format("Invalid resource ID: {}", resourceId));
         }
 
         // We return the pointer to the resource.
         // The caller will then call synchronize() on this returned object.
-        return it->second.get();
+        return *it->second.get();
     }
 
     json serialize() {
@@ -128,7 +128,7 @@ inline _ResourceManager& ResourceManager = _ResourceManager::create();
 
 // CRTP helper for automatic registration
 template <typename Derived>
-class RegisteredResource : public Resource {
+class RegisteredResource : public _Resource {
 public:
     std::string getId() const override {
         return Derived::RESOURCE_ID;
