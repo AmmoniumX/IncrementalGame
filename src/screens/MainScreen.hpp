@@ -22,22 +22,22 @@ using namespace std::string_literals;
 class MainScreen : public Screen {
   private:
     static constexpr int NOTIF_DURATION = static_cast<int>(1.5 * FRAME_RATE);
-    std::reference_wrapper<Text> notifyText;
+    Text &notifyText;
     int notifyTime = 0;
     bool notifyClear = false;
 
-    std::reference_wrapper<Window> inventoryWindow;
+    Window &inventoryWindow;
     std::array<std::reference_wrapper<Text>, 3> inventoryContents;
     ResourcePtr inventory;
 
-    std::reference_wrapper<Window> craftingWindow;
+    Window &craftingWindow;
     std::map<std::string, std::reference_wrapper<Text>> craftingOptions;
 
-    std::reference_wrapper<Window> upgradesWindow;
+    Window &upgradesWindow;
     std::map<std::string, std::reference_wrapper<Text>> upgradeOptions;
 
-    std::reference_wrapper<Window> sidebarCraftingWindow;
-    std::reference_wrapper<Window> sidebarUpgradesWindow;
+    Window &sidebarCraftingWindow;
+    Window &sidebarUpgradesWindow;
 
     enum Subwindows { 
         CRAFTING = 0, 
@@ -58,7 +58,7 @@ class MainScreen : public Screen {
     Subwindows activeWindow = CRAFTING;
 
     void notify(const std::string &text) {
-        notifyText.get().setText(text, true);
+        notifyText.setText(text, true);
         notifyTime = NOTIF_DURATION;
         notifyClear = false;
     }
@@ -145,9 +145,9 @@ class MainScreen : public Screen {
         notifyText(putText(LINES - 1, 0, "")),
         inventoryWindow(createWindow(0, 0, COLS, 5, true, GAME_COLORS::GRAY_BLACK)),
         inventoryContents({
-            inventoryWindow.get().putText(1, 2, ""s, GAME_COLORS::WHITE_BLACK),
-            inventoryWindow.get().putText(2, 2, ""s, GAME_COLORS::WHITE_BLACK),
-            inventoryWindow.get().putText(3, 2, ""s, GAME_COLORS::WHITE_BLACK)
+            inventoryWindow.putText(1, 2, ""s, GAME_COLORS::WHITE_BLACK),
+            inventoryWindow.putText(2, 2, ""s, GAME_COLORS::WHITE_BLACK),
+            inventoryWindow.putText(3, 2, ""s, GAME_COLORS::WHITE_BLACK)
         }),
         inventory(ResourceManager.getResource(Inventory::RESOURCE_ID)),
         craftingWindow(createWindow(5, 12, COLS - 12, LINES - 6, true, GAME_COLORS::YELLOW_BLACK)),
@@ -160,18 +160,18 @@ class MainScreen : public Screen {
         })
     {
         // The rest of your constructor body
-        (void)inventoryWindow.get().setTitle("Inventory", Window::Alignment::CENTER, GAME_COLORS::YELLOW_BLACK);
-        (void)upgradesWindow.get().setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
-        upgradeOptions.emplace("example_upgrade", upgradesWindow.get().putText(1, 1, "Example"s));
-        (void)craftingWindow.get().setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
-        craftingOptions.emplace(Inventory::Items::IRON, craftingWindow.get().putText(1, 1, "[1] Iron Ingots"s));
-        craftingOptions.emplace(Inventory::Items::COPPER, craftingWindow.get().putText(2, 1, "[2] Copper Ingots"s));
-        craftingOptions.emplace(Inventory::Items::IRON_GEAR, craftingWindow.get().putText<std::string>(3, 1, {
+        (void)inventoryWindow.setTitle("Inventory", Window::Alignment::CENTER, GAME_COLORS::YELLOW_BLACK);
+        (void)upgradesWindow.setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
+        upgradeOptions.emplace("example_upgrade", upgradesWindow.putText(1, 1, "Example"s));
+        (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
+        craftingOptions.emplace(Inventory::Items::IRON, craftingWindow.putText(1, 1, "[1] Iron Ingots"s));
+        craftingOptions.emplace(Inventory::Items::COPPER, craftingWindow.putText(2, 1, "[2] Copper Ingots"s));
+        craftingOptions.emplace(Inventory::Items::IRON_GEAR, craftingWindow.putText<std::string>(3, 1, {
                                     {GAME_COLORS::YELLOW_BLACK, "[3] Iron Gear "s},
                                     {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Ingot)"s}
                                         }));
-        (void)sidebarCraftingWindow.get().putText(1, 1, "[C]rafting"s, GAME_COLORS::DEFAULT);
-        (void)sidebarUpgradesWindow.get().putText(1, 1, "[U]pgrades"s, GAME_COLORS::DEFAULT);
+        (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s, GAME_COLORS::DEFAULT);
+        (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s, GAME_COLORS::DEFAULT);
     }
 
     static std::unique_ptr<Screen> create() { return std::make_unique<MainScreen>(); }
@@ -183,7 +183,7 @@ class MainScreen : public Screen {
             notifyTime--;
         }
         if (notifyTime <= 0 && !notifyClear) {
-            notifyText.get().reset();
+            notifyText.reset();
             notifyClear = true;
         }
         refreshInventoryCounts();
