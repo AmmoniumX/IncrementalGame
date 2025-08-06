@@ -6,7 +6,7 @@
 #include <iostream>
 #include <initializer_list>
 #include <print>
-#include <list>
+#include <vector>
 #include <span>
 #include <functional>
 
@@ -36,8 +36,8 @@ public:
     typedef std::unique_ptr<WINDOW, WindowDeleter> WinUniqPtr;
 private:
     WinUniqPtr win;
-    std::list<Text> texts; // Window-level texts
-    std::list<Window> subwindows; // Subwindows within this window
+    std::vector<std::unique_ptr<Text>> texts; // Window-level texts
+    std::vector<std::unique_ptr<Window>> subwindows; // Subwindows within this window
     [[maybe_unused]] int x, y, width, height;
     bool visible;
     int color_pair;
@@ -60,7 +60,7 @@ public:
         if (title) {
             title->setText(text, true, color_pair);
         } else {
-            title = &putText(0, 0, text, color_pair).get();
+            title = &putText(0, 0, text, color_pair);
         }
         switch (alignment) {
             case Alignment::LEFT:
@@ -137,8 +137,8 @@ public:
         // Restore the original color
         wbkgd(win.get(), COLOR_PAIR(color_pair));
         // Overwrite the text with spaces
-        for (auto& text : texts) {
-            text.clear();
+        for (const auto& text : texts) {
+            text->clear();
         }
     }
     void enable() { 
@@ -167,13 +167,13 @@ public:
         }
 
         // Render the texts
-        for (auto& text : texts) {
-            text.render();
+        for (const auto& text : texts) {
+            text->render();
         }
 
         // Render subwindows
-        for (auto& subwindow : subwindows) {
-            subwindow.render();
+        for (const auto& subwindow : subwindows) {
+            subwindow->render();
         }
 
         // Refresh the window
@@ -181,27 +181,27 @@ public:
     }
 
     template<TextString T>
-    std::reference_wrapper<Text> putText(int textY, int textX, const T& text, int text_color_pair=0) {
-        texts.emplace_back(textY, textX, text, text_color_pair, win.get());
-        return std::ref(texts.back());
+    Text &putText(int textY, int textX, const T& text, int text_color_pair=0) {
+        texts.push_back(std::make_unique<Text>(textY, textX, text, text_color_pair, win.get()));
+        return *texts.back();
     }
 
     template<TextString T>
-    std::reference_wrapper<Text> putText(int textY, int textX, const std::span<const Text::TextChunk<T>> chunks) {
-        texts.emplace_back(textY, textX, chunks, win.get());
-        return std::ref(texts.back());
+    Text &putText(int textY, int textX, const std::span<const Text::TextChunk<T>> chunks) {
+        texts.push_back(std::make_unique<Text>(textY, textX, chunks, win.get()));
+        return *texts.back();
     }
 
     template<TextString T>
     std::reference_wrapper<Text> putText(int textY, int textX, const std::initializer_list<const Text::TextChunk<T>> chunks) {
-        texts.emplace_back(textY, textX, chunks, win.get());
-        return std::ref(texts.back());
+        texts.push_back(std::make_unique<Text>(textY, textX, chunks, win.get()));
+        return *texts.back();
     }
 
-    std::reference_wrapper<Window> createSubwindow(int subY, int subX, int subWidth, int subHeight, 
+    Window &createSubwindow(int subY, int subX, int subWidth, int subHeight, 
         bool visible=true, int color_pair=0) {
-        subwindows.emplace_back(subX, subY, subWidth, subHeight, visible, color_pair, win.get());
-        return std::ref(subwindows.back());
+        subwindows.push_back(std::make_unique<Window>(subX, subY, subWidth, subHeight, visible, color_pair, win.get()));
+        return *subwindows.back();
     }
 
     virtual void onTick() {}

@@ -1,10 +1,10 @@
 #pragma once
 
-#include <functional>
 #include <ncursesw/ncurses.h>
 #include <string>
 #include <print>
-#include <list>
+#include <vector>
+#include <memory>
 
 #include "./Text.hpp"
 #include "./Window.hpp"
@@ -15,29 +15,29 @@
 */
 class Screen {
 private:
-    std::list<Text> texts; // Screen-level texts
-    std::list<Window> windows; // Screen-level windows
+    std::vector<std::unique_ptr<Text>> texts; // Screen-level texts
+    std::vector<std::unique_ptr<Window>> windows; // Screen-level windows
 
 public:
     virtual ~Screen() = default;
 
-    std::reference_wrapper<Text> putText(int y, int x, const std::string& text, int color_pair=0) {
-        texts.emplace_back(y, x, text, color_pair);
-        return std::ref(texts.back());
+    Text &putText(int y, int x, const std::string& text, int color_pair=0) {
+        texts.push_back(std::make_unique<Text>(y, x, text, color_pair));
+        return *texts.back();
     }
 
-    std::reference_wrapper<Window> createWindow(int y, int x, int width, int height, bool visible=true, int color_pair=0) {
-        windows.emplace_back(x, y, width, height, visible, color_pair, nullptr);
-        return std::ref(windows.back());
+    Window &createWindow(int y, int x, int width, int height, bool visible=true, int color_pair=0) {
+        windows.push_back(std::make_unique<Window>(x, y, width, height, visible, color_pair, nullptr));
+        return *windows.back();
     }
 
     void render() {
         // clear();
-        for (auto& text : texts) {
-            text.render();
+        for (const auto& text : texts) {
+            text->render();
         }
-        for (auto& window : windows) {
-            window.render();
+        for (const auto& window : windows) {
+            window->render();
         }
         refresh();
     }
