@@ -46,12 +46,12 @@ private:
         std::string blank(needsClear, ' ');
         mvwaddstr(getWin(), y, x, blank.c_str());
         if (clearStr) {
-            std::visit([&](auto& chunks) {
+            std::visit([](auto& chunks) {
                 for (auto &chunk : chunks) {
                     chunk.text.clear();
-                    clearStr = false;
                 }
             }, textChunks);
+            clearStr = false;
         }
         needsClear = 0;
     }
@@ -67,11 +67,9 @@ private:
     }
 
 public:
-    Text(int y, int x, const std::string& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
-        : y(y), x(x), textChunks(std::vector<TextChunk<std::string>>({{color_pair, txt}})), win(win) {}
-
-    Text(int y, int x, const std::wstring& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
-        : y(y), x(x), textChunks(std::vector<TextChunk<std::wstring>>({{color_pair, txt}})), win(win) {}
+    template<TextString T>
+    Text(int y, int x, const T& txt, int color_pair = 0, std::shared_ptr<WINDOW> win = nullptr)
+        : y(y), x(x), textChunks(std::vector<TextChunk<T>>({{color_pair, txt}})), win(win) {}
 
     template<TextString T>
     Text(int y, int x, const std::span<const TextChunk<T>>& chunks, std::shared_ptr<WINDOW> win = nullptr)
@@ -110,14 +108,10 @@ public:
     int getX() const { return x; }
     int getY() const { return y; }
 
-    void setText(const std::string& new_text, bool clear = false, int color_pair = 0) {
+    template<TextString T>
+    void setText(const T& new_text, bool clear = false, int color_pair = 0) {
         if (clear) needsClear = std::max(needsClear, getVisualLength());
-        textChunks = std::vector<TextChunk<std::string>>({{color_pair, new_text}});
-    }
-
-    void setText(const std::wstring& new_text, bool clear = false, int color_pair = 0) {
-        if (clear) needsClear = std::max(needsClear, getVisualLength());
-        textChunks = std::vector<TextChunk<std::wstring>>({{color_pair, new_text}});
+        textChunks = std::vector<TextChunk<T>>({{color_pair, new_text}});
     }
 
     std::variant<std::string, std::wstring> getText() {
