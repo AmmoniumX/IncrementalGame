@@ -217,16 +217,23 @@ class MainScreen : public Screen {
         (void)upgradesWindow.setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
         upgradeOptions.emplace("example_upgrade", upgradesWindow.putText(1, 1, "Example"s));
         (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
-        addCraftingOption('1', Inventory::Items::IRON, craftingWindow.putText(1, 1, "[1] Iron Ingot 1x"s),
+        addCraftingOption('1', Inventory::Items::IRON, craftingWindow.putText<std::string>(1, 1, {
+                        {GAME_COLORS::WHITE_BLACK, "[1] "s},
+                        {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}
+                    }),
                 []([[maybe_unused]] MainScreen *scr, Inventory *inv) {
                 inv->addItem(Inventory::Items::IRON, N(1));
         });
-        addCraftingOption('2', Inventory::Items::COPPER, craftingWindow.putText(2, 1, "[2] Copper Ingot 1x"s),
+        addCraftingOption('2', Inventory::Items::COPPER, craftingWindow.putText<std::string>(2, 1, {
+                    {GAME_COLORS::WHITE_BLACK, "[2] "s},
+                    {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}
+                }),
                 []([[maybe_unused]] MainScreen *scr, Inventory *inv) {
                 inv->addItem(Inventory::Items::COPPER, N(1));
         });
         addCraftingOption('3', Inventory::Items::IRON_GEAR, craftingWindow.putText<std::string>(3, 1, {
-                    {GAME_COLORS::YELLOW_BLACK, "[3] Iron Gear 1x"s},
+                    {GAME_COLORS::WHITE_BLACK, "[3] "s},
+                    {GAME_COLORS::YELLOW_BLACK, "Iron Gear 1x "s},
                     {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}
                 }),
                 [](MainScreen *scr, Inventory *inv) {
@@ -234,15 +241,17 @@ class MainScreen : public Screen {
 
         });
         addCraftingOption('4', Inventory::Items::COPPER_WIRE, craftingWindow.putText<std::string>(4, 1, {
-                        {GAME_COLORS::YELLOW_BLACK, "[4] Copper Wire 3x"},
+                        {GAME_COLORS::WHITE_BLACK, "[4] "s},
+                        {GAME_COLORS::YELLOW_BLACK, "Copper Wire 3x "s},
                         {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}
                     }),
                 [](MainScreen *scr, Inventory *inv) {
                     scr->attemptRecipe(inv, Recipes::COPPER_WIRE);
         });
         addCraftingOption('5', Inventory::Items::MOTOR, craftingWindow.putText<std::string>(5, 1, {
-                        {GAME_COLORS::YELLOW_BLACK, "[5] Motor 1x "s},
-                        {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"}
+                        {GAME_COLORS::WHITE_BLACK, "[5] "s},
+                        {GAME_COLORS::YELLOW_BLACK, "Motor 1x "s},
+                        {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"s}
                     }),
                 [](MainScreen *scr, Inventory *inv) {
                     scr->attemptRecipe(inv, Recipes::MOTOR);
