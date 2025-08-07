@@ -2,7 +2,6 @@
 
 #include <map>
 #include <string>
-#include <string_view>
 
 #include "../ResourceManager.hpp"
 #include "../game.hpp"
@@ -12,15 +11,22 @@ class Inventory : public RegisteredResource<Inventory> {
     std::map<std::string, BigNum> items;
 
   public:
-    static constexpr const std::string RESOURCE_ID = "inventory";
+    static constexpr std::string RESOURCE_ID = "inventory";
 
     struct Items {
-        static constexpr const std::string IRON = "Iron";
-        static constexpr const std::string COPPER = "Copper";
-        static constexpr const std::string IRON_GEAR = "Iron Gear";
-        static constexpr const std::string COPPER_WIRE = "Copper Wire";
-        static constexpr const std::string MOTOR = "Motor";
+        static constexpr std::string IRON = "Iron";
+        static constexpr std::string COPPER = "Copper";
+        static constexpr std::string IRON_GEAR = "Iron Gear";
+        static constexpr std::string COPPER_WIRE = "Copper Wire";
+        static constexpr std::string MOTOR = "Motor";
     };
+
+    struct ItemStack {
+        const std::string id;
+        const BigNum amount;
+        constexpr ItemStack(const std::string id, const BigNum amount) : id(id), amount(amount) {}
+    };
+
 
     Inventory() {}
 

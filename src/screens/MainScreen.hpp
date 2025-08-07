@@ -57,6 +57,28 @@ class MainScreen : public Screen {
 
     Subwindows activeWindow = CRAFTING;
 
+    template<size_t NumIn, size_t NumOut>
+    struct Recipe {
+        std::array<const Inventory::ItemStack, NumIn> inputs;
+        std::array<const Inventory::ItemStack, NumOut> outputs;
+    };
+
+    struct Recipes {
+        static constexpr Recipe<1, 1> IRON_GEAR = {
+            {Inventory::ItemStack(Inventory::Items::IRON, 4)},
+            {Inventory::ItemStack(Inventory::Items::IRON_GEAR, 1)}
+        };
+        static constexpr Recipe<1, 1> COPPER_WIRE = {
+            {Inventory::ItemStack(Inventory::Items::COPPER, 1)},
+            {Inventory::ItemStack(Inventory::Items::COPPER_WIRE, 3)}
+        };
+        static constexpr Recipe<2, 1> MOTOR = {
+            {Inventory::ItemStack(Inventory::Items::IRON_GEAR, 2),
+                 Inventory::ItemStack(Inventory::Items::COPPER_WIRE, 10)},
+            {Inventory::ItemStack(Inventory::Items::MOTOR, 1)}
+        };
+    };
+
     void notify(const std::string &text) {
         notifyText.setText(text, true);
         notifyTime = NOTIF_DURATION;
@@ -135,6 +157,38 @@ class MainScreen : public Screen {
         }
     }
 
+    std::unordered_map<char, void(*)(MainScreen*, Inventory*)> inputListeners;
+
+    void registerListener(char input, void(*listener)(MainScreen*, Inventory*)) {
+        inputListeners.insert_or_assign(input, listener);
+    }
+
+    void addCraftingOption(char input, std::string itemId, Text &text, void(*listener)(MainScreen*, Inventory*)) {
+        craftingOptions.emplace(itemId, text);
+        registerListener(input, listener);
+    }
+
+    template<size_t NumIn, size_t NumOut>
+    bool attemptRecipe(Inventory *inv, Recipe<NumIn, NumOut> recipe) {
+
+        // Check feasibility
+        for (const auto &input : recipe.inputs) {
+            if (inv->getItem(input.id) < input.amount) {
+                notify(std::format("Not enough items: {}", input.id));
+                return false;
+            }
+        }
+
+        // Execute craft
+        for (const auto &input : recipe.inputs) {
+            inv->subtractItem(input.id, input.amount);
+        }
+        for (const auto &output : recipe.outputs) {
+            inv->addItem(output.id, output.amount);
+        }
+        return true;
+    }
+
   public:
     virtual ~MainScreen() override = default;
 
@@ -163,12 +217,36 @@ class MainScreen : public Screen {
         (void)upgradesWindow.setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
         upgradeOptions.emplace("example_upgrade", upgradesWindow.putText(1, 1, "Example"s));
         (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
-        craftingOptions.emplace(Inventory::Items::IRON, craftingWindow.putText(1, 1, "[1] Iron Ingots"s));
-        craftingOptions.emplace(Inventory::Items::COPPER, craftingWindow.putText(2, 1, "[2] Copper Ingots"s));
-        craftingOptions.emplace(Inventory::Items::IRON_GEAR, craftingWindow.putText<std::string>(3, 1, {
-                                    {GAME_COLORS::YELLOW_BLACK, "[3] Iron Gear "s},
-                                    {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Ingot)"s}
-                                        }));
+        addCraftingOption('1', Inventory::Items::IRON, craftingWindow.putText(1, 1, "[1] Iron Ingot 1x"s),
+                []([[maybe_unused]] MainScreen *scr, Inventory *inv) {
+                inv->addItem(Inventory::Items::IRON, N(1));
+        });
+        addCraftingOption('2', Inventory::Items::COPPER, craftingWindow.putText(2, 1, "[2] Copper Ingot 1x"s),
+                []([[maybe_unused]] MainScreen *scr, Inventory *inv) {
+                inv->addItem(Inventory::Items::COPPER, N(1));
+        });
+        addCraftingOption('3', Inventory::Items::IRON_GEAR, craftingWindow.putText<std::string>(3, 1, {
+                    {GAME_COLORS::YELLOW_BLACK, "[3] Iron Gear 1x"s},
+                    {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}
+                }),
+                [](MainScreen *scr, Inventory *inv) {
+                    scr->attemptRecipe(inv, Recipes::IRON_GEAR);
+
+        });
+        addCraftingOption('4', Inventory::Items::COPPER_WIRE, craftingWindow.putText<std::string>(4, 1, {
+                        {GAME_COLORS::YELLOW_BLACK, "[4] Copper Wire 3x"},
+                        {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}
+                    }),
+                [](MainScreen *scr, Inventory *inv) {
+                    scr->attemptRecipe(inv, Recipes::COPPER_WIRE);
+        });
+        addCraftingOption('5', Inventory::Items::MOTOR, craftingWindow.putText<std::string>(5, 1, {
+                        {GAME_COLORS::YELLOW_BLACK, "[5] Motor 1x "s},
+                        {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"}
+                    }),
+                [](MainScreen *scr, Inventory *inv) {
+                    scr->attemptRecipe(inv, Recipes::MOTOR);
+        });
         (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s, GAME_COLORS::DEFAULT);
         (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s, GAME_COLORS::DEFAULT);
     }
@@ -190,15 +268,10 @@ class MainScreen : public Screen {
         // Handle input
         auto lockedInventory = inventory.synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
+        // Process global screen inputs
         switch (input) {
         case 'q':
             return true;
-        case '1':
-            inv->addItem(Inventory::Items::IRON, N(1));
-            return false;
-        case '2':
-            inv->addItem(Inventory::Items::COPPER, N(1));
-            return false;
         case 'C':
             switchWindow(CRAFTING);
             return false;
@@ -210,10 +283,16 @@ class MainScreen : public Screen {
             return false;
         case -1:
             return false;
-        default:
-            notify(std::string("Unknown command: ") + input + " (" +
-                   std::to_string(static_cast<int>(input)) + ")");
+        }
+        // Process registered input listeners
+        if (auto i = inputListeners.find(input); i != inputListeners.end()) {
+            i->second(this, inv);
             return false;
         }
+
+        // Unknown command
+        notify(std::format("Unknown command: {} ({:d})", input, input));
+        return false;
+
     }
 };
