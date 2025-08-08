@@ -3,6 +3,8 @@
 #include <iostream>
 #include <print>
 #include <format>
+#include <string>
+#include <string_view>
 #include <stdexcept>
 #include <unordered_set>
 #include <unordered_map>
@@ -21,7 +23,7 @@ public:
 
     virtual json serialize() const = 0;
     virtual void deserialize(const json& j) = 0;
-    virtual std::string getId() const = 0;
+    virtual std::string_view getId() const = 0;
     virtual void onTick(const uint& gameTick) = 0;
 
     _Resource(const _Resource&) = delete;
@@ -60,21 +62,18 @@ public:
         return result;
     }
 
-    void addResource(const std::string& id, std::unique_ptr<_Resource>&& moved_resource) {
-        std::println(std::cerr, "Registering resource: {}", id);
+    void addResource(const std::string_view _id, std::unique_ptr<_Resource>&& moved_resource) {
+        std::println(std::cerr, "Registering resource: {}", _id);
         std::lock_guard<std::mutex> lock(mtx_resources);
+        std::string id(_id);
         owned_resources.insert_or_assign(id, std::move(moved_resource));
         auto resource = std::make_unique<boost::synchronized_value<_Resource*>>(owned_resources[id].get());
         owned_synchronized_resources.insert_or_assign(id, std::move(resource));
     }
 
-    // This returns a pointer to a synchronized value that contains the resource.
-    // The internal pointer is a "raw" pointer, which is safe to use as long as the resource is not deleted.
-    // This is safe because the ResourceManager owns the resource and guarantees its lifetime, and
-    // ResourceManager itself is only destroyed at the end of the program.
-    Resource &getResource(const std::string& resourceId) {
+    Resource &getResource(const std::string_view resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
-        auto it = owned_synchronized_resources.find(resourceId);
+        auto it = owned_synchronized_resources.find(std::string(resourceId));
         if (it == owned_synchronized_resources.end()) {
             throw std::runtime_error(std::format("Invalid resource ID: {}", resourceId));
         }
@@ -130,7 +129,7 @@ inline _ResourceManager& ResourceManager = _ResourceManager::create();
 template <typename Derived>
 class RegisteredResource : public _Resource {
 public:
-    std::string getId() const override {
+    std::string_view getId() const override {
         return Derived::RESOURCE_ID;
     }
 

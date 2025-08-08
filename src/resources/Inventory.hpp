@@ -2,29 +2,32 @@
 
 #include <map>
 #include <string>
+#include <string_view>
 
 #include "../ResourceManager.hpp"
 #include "../game.hpp"
 
+using namespace std::literals::string_literals;
+using namespace std::literals::string_view_literals;
 class Inventory : public RegisteredResource<Inventory> {
   private:
     std::map<std::string, BigNum> items;
 
   public:
-    static constexpr std::string RESOURCE_ID = "inventory";
+    static constexpr std::string_view RESOURCE_ID = "inventory"sv;
 
     struct Items {
-        static constexpr std::string IRON = "Iron";
-        static constexpr std::string COPPER = "Copper";
-        static constexpr std::string IRON_GEAR = "Iron Gear";
-        static constexpr std::string COPPER_WIRE = "Copper Wire";
-        static constexpr std::string MOTOR = "Motor";
+        static constexpr std::string_view IRON = "Iron"sv;
+        static constexpr std::string_view COPPER = "Copper"sv;
+        static constexpr std::string_view IRON_GEAR = "Iron Gear"sv;
+        static constexpr std::string_view COPPER_WIRE = "Copper Wire"sv;
+        static constexpr std::string_view MOTOR = "Motor"sv;
     };
 
     struct ItemStack {
-        const std::string id;
+        const std::string_view id;
         const BigNum amount;
-        constexpr ItemStack(const std::string id, const BigNum amount) : id(id), amount(amount) {}
+        constexpr ItemStack(const std::string_view id, const BigNum amount) : id(id), amount(amount) {}
     };
 
 
@@ -38,23 +41,27 @@ class Inventory : public RegisteredResource<Inventory> {
 
     const std::map<std::string, BigNum> &getItems() const { return items; }
 
-    BigNum getItem(const std::string &item) const {
-        auto it = items.find(item);
+    BigNum getItem(const std::string_view _item) const {
+        std::string item(_item);
+        auto it = items.find(std::string(item));
         if (it != items.end()) {
             return it->second;
         }
         return BigNum(0); // Return 0 if item not found
     }
 
-    void setItem(const std::string &item, const BigNum &amount) {
+    void setItem(const std::string_view _item, const BigNum &amount) {
+        std::string item(_item);
         items[item] = amount;
     }
 
-    void addItem(const std::string &item, const BigNum &amount) {
+    void addItem(const std::string_view _item, const BigNum &amount) {
+        std::string item(_item);
         items[item] += amount;
     }
 
-    void subtractItem(const std::string &item, const BigNum &amount) {
+    void subtractItem(const std::string_view _item, const BigNum &amount) {
+        std::string item(_item);
         items[item] -= amount;
         if (items[item] < BigNum(0)) {
             items[item] = BigNum(0); // Prevent negative amounts

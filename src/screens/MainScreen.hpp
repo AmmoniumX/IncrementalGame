@@ -58,8 +58,8 @@ class MainScreen : public Screen {
 
     template<size_t NumIn, size_t NumOut>
     struct Recipe {
-        std::array<const Inventory::ItemStack, NumIn> inputs;
-        std::array<const Inventory::ItemStack, NumOut> outputs;
+        const std::array<const Inventory::ItemStack, NumIn> inputs;
+        const std::array<const Inventory::ItemStack, NumOut> outputs;
     };
 
     struct Recipes {
