@@ -31,7 +31,6 @@ class MainScreen : public Screen {
     Resource &inventory;
 
     Window &craftingWindow;
-    std::map<std::string, std::reference_wrapper<Text>> craftingOptions;
 
     Window &upgradesWindow;
     std::map<std::string, std::reference_wrapper<Text>> upgradeOptions;
@@ -64,6 +63,14 @@ class MainScreen : public Screen {
     };
 
     struct Recipes {
+        static constexpr Recipe<0, 1> IRON_INGOT = {
+            {},
+            {Inventory::ItemStack(Inventory::Items::IRON, 1)}
+        };
+        static constexpr Recipe<0, 1> COPPER_INGOT = {
+            {},
+            {Inventory::ItemStack(Inventory::Items::COPPER, 1)}
+        };
         static constexpr Recipe<1, 1> IRON_GEAR = {
             {Inventory::ItemStack(Inventory::Items::IRON, 4)},
             {Inventory::ItemStack(Inventory::Items::IRON_GEAR, 1)}
@@ -128,7 +135,7 @@ class MainScreen : public Screen {
                     display_lines[currLine] += entry + " ";
                 } else {
                     std::println(
-                        std::cerr,
+                        stderr,
                         "Inventory overflow, cannot display all items.");
                     break;
                 }
@@ -139,7 +146,7 @@ class MainScreen : public Screen {
                     display_lines[currLine] = entry + " ";
                 } else {
                     std::println(
-                        std::cerr,
+                        stderr,
                         "Inventory overflow, cannot display all items.");
                     break;
                 }
@@ -157,31 +164,41 @@ class MainScreen : public Screen {
         }
     }
 
-    std::unordered_map<char, void(*)(MainScreen*, Inventory*)> inputListeners;
+    std::unordered_map<char, std::function<void(MainScreen*, Inventory*)>> inputListeners;
 
-    void registerListener(char input, void(*listener)(MainScreen*, Inventory*)) {
+    void registerListener(char input, std::function<void(MainScreen*, Inventory*)> listener) {
         inputListeners.insert_or_assign(input, listener);
     }
 
-    void addCraftingOption(char input, std::string itemId, Text &text, void(*listener)(MainScreen*, Inventory*)) {
-        craftingOptions.emplace(itemId, text);
-        registerListener(input, listener);
+    int numCraftingOptions = 0;
+    template<TextString T, size_t NumIn, size_t NumOut>
+    void addCraftingOption(char input, std::initializer_list<Text::TextChunk<T>> init, 
+            Recipe<NumIn, NumOut> recipe) {
+        craftingWindow.putText<std::string>(++numCraftingOptions, 1, init);
+        registerListener(input, [recipe](MainScreen *scr, Inventory *inv) {
+            scr->attemptRecipe(inv, recipe);
+        });
     }
 
     template<size_t NumIn, size_t NumOut>
+        requires(NumOut > 0)
     bool attemptRecipe(Inventory *inv, Recipe<NumIn, NumOut> recipe) {
 
         // Check feasibility
-        for (const auto &input : recipe.inputs) {
-            if (inv->getItem(input.id) < input.amount) {
-                notify(std::format("Not enough items: {}", input.id));
-                return false;
+        if constexpr (NumIn > 0) {
+            for (const auto &input : recipe.inputs) {
+                if (inv->getItem(input.id) < input.amount) {
+                    notify(std::format("Not enough items: {}", input.id));
+                    return false;
+                }
             }
         }
 
         // Execute craft
-        for (const auto &input : recipe.inputs) {
-            inv->subtractItem(input.id, input.amount);
+        if constexpr (NumIn > 0) {
+            for (const auto &input : recipe.inputs) {
+                inv->subtractItem(input.id, input.amount);
+            }
         }
         for (const auto &output : recipe.outputs) {
             inv->addItem(output.id, output.amount);
@@ -217,45 +234,29 @@ class MainScreen : public Screen {
         (void)upgradesWindow.setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
         upgradeOptions.emplace("example_upgrade", upgradesWindow.putText(1, 1, "Example"s));
         (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
-        addCraftingOption('1', Inventory::Items::IRON, craftingWindow.putText<std::string>(1, 1, {
+        addCraftingOption<std::string, 0, 1>('1', {
                         {GAME_COLORS::WHITE_BLACK, "[1] "s},
                         {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}
-                    }),
-                []([[maybe_unused]] MainScreen *scr, Inventory *inv) {
-                inv->addItem(Inventory::Items::IRON, N(1));
-        });
-        addCraftingOption('2', Inventory::Items::COPPER, craftingWindow.putText<std::string>(2, 1, {
+                    }, Recipes::IRON_INGOT);
+        addCraftingOption<std::string, 0, 1>('2', {
                     {GAME_COLORS::WHITE_BLACK, "[2] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}
-                }),
-                []([[maybe_unused]] MainScreen *scr, Inventory *inv) {
-                inv->addItem(Inventory::Items::COPPER, N(1));
-        });
-        addCraftingOption('3', Inventory::Items::IRON_GEAR, craftingWindow.putText<std::string>(3, 1, {
+                }, Recipes::COPPER_INGOT);
+        addCraftingOption<std::string, 1, 1>('3', {
                     {GAME_COLORS::WHITE_BLACK, "[3] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Iron Gear 1x "s},
                     {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}
-                }),
-                [](MainScreen *scr, Inventory *inv) {
-                    scr->attemptRecipe(inv, Recipes::IRON_GEAR);
-
-        });
-        addCraftingOption('4', Inventory::Items::COPPER_WIRE, craftingWindow.putText<std::string>(4, 1, {
+                }, Recipes::IRON_GEAR);
+        addCraftingOption<std::string, 1, 1>('4', {
                         {GAME_COLORS::WHITE_BLACK, "[4] "s},
                         {GAME_COLORS::YELLOW_BLACK, "Copper Wire 3x "s},
                         {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}
-                    }),
-                [](MainScreen *scr, Inventory *inv) {
-                    scr->attemptRecipe(inv, Recipes::COPPER_WIRE);
-        });
-        addCraftingOption('5', Inventory::Items::MOTOR, craftingWindow.putText<std::string>(5, 1, {
+                    }, Recipes::COPPER_WIRE);
+        addCraftingOption<std::string, 2, 1>('5', {
                         {GAME_COLORS::WHITE_BLACK, "[5] "s},
                         {GAME_COLORS::YELLOW_BLACK, "Motor 1x "s},
                         {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"s}
-                    }),
-                [](MainScreen *scr, Inventory *inv) {
-                    scr->attemptRecipe(inv, Recipes::MOTOR);
-        });
+                    }, Recipes::MOTOR);
         (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s, GAME_COLORS::DEFAULT);
         (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s, GAME_COLORS::DEFAULT);
     }
