@@ -160,7 +160,7 @@ class MainScreen : public Screen {
             if (oldTextStr) {
                 if (*oldTextStr == display_lines[i]) { return; }
             }
-            inventoryContents[i].get().setText(display_lines[i], true);
+            inventoryContents[i].get().setText(display_lines[i], true, GAME_COLORS::WHITE_BLACK);
         }
     }
 
