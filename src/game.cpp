@@ -5,31 +5,27 @@
 #include <ncursesw/ncurses.h>
 #include <print>
 #include <thread>
+#include <string>
 
-#include "./ResourceManager.hpp"
 #include "./render/Screen.hpp"
-#include "./render/ScreenManager.hpp"
-#include "./resources/Inventory.hpp"
+#include "./ScreenManager.hpp"
+#include "./ResourceManager.hpp"
+#include "./SystemManager.hpp"
 #include "./screens/MainScreen.hpp"
+#include "./resources/Inventory.hpp"
 #include "game.hpp"
 #include "setup.hpp"
 
 using nlohmann::json;
 
-namespace {
-// Private game variables
-uint tick = 0;
-std::atomic_bool do_exit = false;
-} // namespace
-
 void gameTick() {
-    ResourceManager::instance().onTick(tick);
-    tick++;
+    SystemManager::instance().onTick();
 }
 
-void gameWorker() {
+void run() {
+    std::println(stderr, "Running game...");
     // Main game loop
-    while (!do_exit) {
+    do {
         auto start = time(nullptr);
         gameTick();
         auto end = time(nullptr);
@@ -39,45 +35,35 @@ void gameWorker() {
             std::this_thread::sleep_for(
                 std::chrono::milliseconds(static_cast<int>(sleep_time * 1000)));
         }
-    }
+    } while (!GameInternals::exit);
+    std::println(stderr, "Exiting...");
 }
 
-int run(string savefile) {
-
+void setup(std::string savefile) {
     // Initialize resoruces
     std::println(stderr, "Registering resources...");
     Inventory::create();
 
     // Load game data
     load(savefile);
-
+    
     // Initialize ncurses
     std::println(stderr, "Initializing ncurses...");
-    setupNcurses();
+    setupNcurses();    
 
+    // Initialize systems
+    std::println(stderr, "Registering systems...");
     // Create and setup ScreenManager and Screen
-    ScreenManager &manager = ScreenManager::instance();
+    ScreenManager &screenManager = ScreenManager::instance();
     std::unique_ptr<Screen> mainScreen = MainScreen::create();
-    std::reference_wrapper<Screen> movedMainScreen = manager.registerScreen(std::move(mainScreen));
-    manager.changeScreen(&movedMainScreen.get());
+    std::reference_wrapper<Screen> movedMainScreen = screenManager.registerScreen(std::move(mainScreen));
+    screenManager.changeScreen(&movedMainScreen.get());
+    SystemManager::instance().registerSystem(&screenManager);
+}
 
-    // Main game loop
-    std::println(stderr, "Starting game thread...");
-    do_exit = false;
-    std::thread gameThread([]() {
-        gameWorker();
-        return;
-    });
-    std::println(stderr, "Game thread started. Starting render loop...");
-    manager.run();
-    std::println(stderr, "Render loop ended. Waiting for game thread...");
-    // Cleanup
-    do_exit = true;
-    gameThread.join();
-    std::println(stderr, "Game thread ended");
+void setdown(std::string savefile) {
+    // Save game data
     save(savefile);
-
-    return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -98,5 +84,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    return run(savefile);
+    // Setup
+    setup(savefile);
+    run();
+    setdown(savefile);
+
+    return 0;
 }

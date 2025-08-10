@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <print>
 
 #include "BigNum.hpp"
 #include "ResourceManager.hpp"
@@ -35,7 +36,6 @@ void save(const string &filename) {
 
     // Convert to json
     json j = to_json();
-
     std::ofstream o(filename);
     if (!o.is_open()) {
         std::println(stderr, "Error: Could not open file {}", filename);

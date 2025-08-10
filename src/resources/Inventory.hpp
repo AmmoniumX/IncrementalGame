@@ -9,12 +9,14 @@
 
 using namespace std::literals::string_literals;
 using namespace std::literals::string_view_literals;
+
 class Inventory : public RegisteredResource<Inventory> {
   private:
     std::map<std::string, BigNum> items;
-
+    Inventory() {}
+    
   public:
-    static constexpr std::string_view RESOURCE_ID = "inventory"sv;
+    static constexpr std::string_view RESOURCE_ID = "Inventory"sv;
 
     struct Items {
         static constexpr std::string_view IRON = "Iron"sv;
@@ -30,12 +32,8 @@ class Inventory : public RegisteredResource<Inventory> {
         constexpr ItemStack(const std::string_view id, const BigNum amount) : id(id), amount(amount) {}
     };
 
-
-    Inventory() {}
-
     static void create() {
-        static std::unique_ptr<Inventory> instance =
-            std::make_unique<Inventory>();
+        static std::unique_ptr<Inventory> instance(new Inventory());
         registerResource(std::move(instance));
     }
 
@@ -69,7 +67,7 @@ class Inventory : public RegisteredResource<Inventory> {
     }
 
     virtual json serialize() const override {
-        json j;
+        json j = json::object();
         for (const auto &item : items) {
             j[item.first] = item.second.serialize();
         }
@@ -82,10 +80,6 @@ class Inventory : public RegisteredResource<Inventory> {
                 value.is_string() ? value.get<std::string>() : "0";
             items[key] = BigNum::deserialize(valueStr);
         }
-    }
-
-    virtual void onTick([[maybe_unused]] const uint &gameTick) override {
-        // No specific logic
     }
 
     // Prevent copying and assignment

@@ -27,7 +27,6 @@ public:
     virtual json serialize() const = 0;
     virtual void deserialize(const json& j) = 0;
     virtual std::string_view getId() const = 0;
-    virtual void onTick(const uint& gameTick) = 0;
 
     _Resource(const _Resource&) = delete;
     _Resource& operator=(const _Resource&) = delete;
@@ -39,16 +38,22 @@ protected:
 using Resource = boost::synchronized_value<_Resource*>;
 class ResourceManager {
 private:
+
+    // struct SynchronizedResource {
+    //     std::unique_ptr<_Resource>> resource;
+    //     std::unique_ptr<boost::synchronized_value<_Resource*>> synchronized;
+    // }
+
     ResourceManager() = default;
 
     // Container of uniquely owned resources
-    std::unordered_map<std::string, std::unique_ptr<_Resource>> owned_resources;
+    std::unordered_map<std::string, std::unique_ptr<_Resource>> resources;
 
     // Container of shared pointers to resources, allowing thread-safe access
     std::unordered_map<std::string, std::unique_ptr<boost::synchronized_value<_Resource*>>> owned_synchronized_resources;
 
     // Mutex for synchronizing access to the resources
-    std::mutex mtx_resources;
+    std::mutex mtx;
 
 public:
     static ResourceManager& instance() {
@@ -57,7 +62,7 @@ public:
     }
 
     std::unordered_set<std::string> getResourceIds() {
-        std::lock_guard<std::mutex> lock(mtx_resources);
+        std::lock_guard<std::mutex> lock(mtx);
         std::unordered_set<std::string> result;
         for (const auto& [id, _] : owned_synchronized_resources) {
             result.insert(id);
@@ -65,32 +70,33 @@ public:
         return result;
     }
 
-    void create(const std::string_view _id, std::unique_ptr<_Resource>&& moved_resource) {
+    void create(const std::string_view _id, std::unique_ptr<_Resource>&& resource) {
         std::println(stderr, "Creating resource: {}", _id);
-        std::lock_guard<std::mutex> lock(mtx_resources);
+        std::lock_guard lock(mtx);
         std::string id(_id);
-        owned_resources.insert_or_assign(id, std::move(moved_resource));
-        auto resource = std::make_unique<boost::synchronized_value<_Resource*>>(owned_resources[id].get());
-        owned_synchronized_resources.insert_or_assign(id, std::move(resource));
+        resources.insert_or_assign(id, std::move(resource));
+        auto r = std::make_unique<boost::synchronized_value<_Resource*>>(resources[id].get());
+        owned_synchronized_resources.insert_or_assign(id, std::move(r));
     }
 
     void destroy(const std::string_view _id) {
         std::println(stderr, "Destroying resource: {}", _id);
-        std::lock_guard<std::mutex> lock(mtx_resources);
+        std::lock_guard lock(mtx);
         std::string id(_id);
         auto synced_res = owned_synchronized_resources.erase(id);
         if (synced_res == 0) {
             std::println(stderr, "WARN: unable to delete synced resource {}", id);
         }
-        auto res = owned_resources.erase(id);
+        auto res = resources.erase(id);
         if (res == 0) {
             std::println(stderr, "WARN: unable to delete resource {}", id);
         }
     }
 
-    Resource *getResource(const std::string_view resourceId) {
-        std::lock_guard<std::mutex> lock(mtx_resources);
-        auto it = owned_synchronized_resources.find(std::string(resourceId));
+    Resource *getResource(const std::string_view _id) {
+        std::string id(_id);
+        std::lock_guard lock(mtx);
+        auto it = owned_synchronized_resources.find(id);
         if (it == owned_synchronized_resources.end()) {
             // Resource either doesn't exist or was removed
             return nullptr;
@@ -102,12 +108,13 @@ public:
     }
 
     json serialize() {
-        std::lock_guard<std::mutex> lock(mtx_resources);
+        std::lock_guard lock(mtx);
         json result = json::object();
 
         for (const auto& [id, resPtr] : owned_synchronized_resources) {
             auto locked = resPtr->synchronize();
-            result[id] = (*locked)->serialize();
+            auto serialized = (*locked)->serialize();
+            result[id] = serialized;
         }
 
         return json{{"resources", result}};
@@ -117,7 +124,7 @@ public:
         if (!j.contains("resources")) return;
 
         const auto& res_json = j.at("resources");
-        std::lock_guard<std::mutex> lock(mtx_resources);
+        std::lock_guard lock(mtx);
 
         for (const auto& [id, data] : res_json.items()) {
             auto it = owned_synchronized_resources.find(id);
@@ -128,14 +135,6 @@ public:
 
             auto locked = it->second->synchronize();
             (*locked)->deserialize(data);
-        }
-    }
-
-    void onTick(const uint& gameTick) {
-        std::lock_guard<std::mutex> lock(mtx_resources);
-        for (const auto& [_, resPtr] : owned_synchronized_resources) {
-            auto locked = resPtr->synchronize();
-            (*locked)->onTick(gameTick);
         }
     }
 };

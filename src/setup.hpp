@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <print>
+#include <atomic>
 
 #include <ncursesw/ncurses.h>
 
@@ -17,6 +18,10 @@ enum GAME_COLORS {
     YELLOW_GRAY = 5,
     RED_GRAY = 6
 };
+
+namespace GameInternals {
+    std::atomic_bool exit = false;
+} // namespace GameInternals
 
 // Ncurses setup
 void setupNcurses() {
