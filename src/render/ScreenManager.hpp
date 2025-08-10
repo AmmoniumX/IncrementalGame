@@ -29,14 +29,14 @@ private:
 
 public:
     // Static method to get the singleton instance
-    static ScreenManager& getInstance() {
+    static ScreenManager& instance() {
         static ScreenManager instance;
         return instance;
     }
 
     Screen *getCurrentScreen() const { return currentScreen; }
     
-    std::reference_wrapper<Screen> registerScreen(std::unique_ptr<Screen> screen) {
+    std::reference_wrapper<Screen> registerScreen(std::unique_ptr<Screen> &&screen) {
         screens.push_back(std::move(screen));
         return std::ref(*screens.back().get());
     }
@@ -48,6 +48,10 @@ public:
 
     void requestExit() {
         exitRequested = true;
+    }
+
+    char getInput() {
+        return getch();
     }
 
     void run() {
@@ -69,9 +73,8 @@ public:
                 nextScreen = nullptr;
                 screenChange = false;
             }
+            currentScreen->onTick();
             currentScreen->render();
-            char input = getch();
-            exitRequested = currentScreen->onTick(input);
             time_t end = time(nullptr);
 
             // Calculate time to sleep

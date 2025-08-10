@@ -56,7 +56,7 @@ int run(string savefile) {
     setupNcurses();
 
     // Create and setup ScreenManager and Screen
-    ScreenManager &manager = ScreenManager::getInstance();
+    ScreenManager &manager = ScreenManager::instance();
     std::unique_ptr<Screen> mainScreen = MainScreen::create();
     std::reference_wrapper<Screen> movedMainScreen = manager.registerScreen(std::move(mainScreen));
     manager.changeScreen(&movedMainScreen.get());

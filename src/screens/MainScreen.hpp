@@ -62,23 +62,23 @@ class MainScreen : public Screen {
     };
 
     struct Recipes {
-        static constexpr Recipe<0, 1> IRON_INGOT = {
+        static inline const Recipe<0, 1> IRON_INGOT = {
             {},
             {Inventory::ItemStack(Inventory::Items::IRON, 1)}
         };
-        static constexpr Recipe<0, 1> COPPER_INGOT = {
+        static inline const Recipe<0, 1> COPPER_INGOT = {
             {},
             {Inventory::ItemStack(Inventory::Items::COPPER, 1)}
         };
-        static constexpr Recipe<1, 1> IRON_GEAR = {
+        static inline const Recipe<1, 1> IRON_GEAR = {
             {Inventory::ItemStack(Inventory::Items::IRON, 4)},
             {Inventory::ItemStack(Inventory::Items::IRON_GEAR, 1)}
         };
-        static constexpr Recipe<1, 1> COPPER_WIRE = {
+        static inline const Recipe<1, 1> COPPER_WIRE = {
             {Inventory::ItemStack(Inventory::Items::COPPER, 1)},
             {Inventory::ItemStack(Inventory::Items::COPPER_WIRE, 3)}
         };
-        static constexpr Recipe<2, 1> MOTOR = {
+        static inline const Recipe<2, 1> MOTOR = {
             {Inventory::ItemStack(Inventory::Items::IRON_GEAR, 2),
                  Inventory::ItemStack(Inventory::Items::COPPER_WIRE, 10)},
             {Inventory::ItemStack(Inventory::Items::MOTOR, 1)}
@@ -265,7 +265,7 @@ class MainScreen : public Screen {
 
     static std::unique_ptr<Screen> create() { return std::make_unique<MainScreen>(); }
 
-    bool onTick(const char input) override {
+    void onTick() override {
 
         // Update screen elements
         if (notifyTime > 0) {
@@ -278,38 +278,40 @@ class MainScreen : public Screen {
         refreshInventoryCounts();
 
         // Handle input
+        char input = ScreenManager::instance().getInput();
         auto oInventory = ResourceManager::instance().getResource(Inventory::RESOURCE_ID);
         if (!oInventory) {
             std::println(stderr, "ERROR: MainScreen: unable to get inventory");
-            return false;
+            return;
         }
         auto lockedInventory = (*oInventory).synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
         // Process global screen inputs
         switch (input) {
         case 'q':
-            return true;
+            ScreenManager::instance().requestExit();
+            return;
         case 'C':
             switchWindow(CRAFTING);
-            return false;
+            return;
         case 'U':
             switchWindow(UPGRADES);
-            return false;
+            return;
         case '\t':
             rotateWindows();
-            return false;
+            return;
         case -1:
-            return false;
+            return;
         }
         // Process registered input listeners
         if (auto i = inputListeners.find(input); i != inputListeners.end()) {
             i->second(this, inv);
-            return false;
+            return;
         }
 
         // Unknown command
         notify(std::format("Unknown command: {} ({:d})", input, input));
-        return false;
+        return;
 
     }
 };

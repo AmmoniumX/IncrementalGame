@@ -42,8 +42,6 @@ public:
         refresh();
     }
 
-    virtual bool onTick([[maybe_unused]] const char input) {
-        return false; // Default behavior: continue the game loop
-    }
+    virtual void onTick() {}
 };
 
