@@ -1,8 +1,11 @@
 #pragma once
 
+#include <algorithm>
 #include <iostream>
 #include <print>
 #include <format>
+#include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <stdexcept>
@@ -34,9 +37,9 @@ protected:
 };
 
 using Resource = boost::synchronized_value<_Resource*>;
-class _ResourceManager {
+class ResourceManager {
 private:
-    _ResourceManager() = default;
+    ResourceManager() = default;
 
     // Container of uniquely owned resources
     std::unordered_map<std::string, std::unique_ptr<_Resource>> owned_resources;
@@ -48,8 +51,8 @@ private:
     std::mutex mtx_resources;
 
 public:
-    static _ResourceManager& create() {
-        static _ResourceManager instance;
+    static ResourceManager& instance() {
+        static ResourceManager instance;
         return instance;
     }
 
@@ -62,8 +65,8 @@ public:
         return result;
     }
 
-    void addResource(const std::string_view _id, std::unique_ptr<_Resource>&& moved_resource) {
-        std::println(std::cerr, "Registering resource: {}", _id);
+    void create(const std::string_view _id, std::unique_ptr<_Resource>&& moved_resource) {
+        std::println(stderr, "Creating resource: {}", _id);
         std::lock_guard<std::mutex> lock(mtx_resources);
         std::string id(_id);
         owned_resources.insert_or_assign(id, std::move(moved_resource));
@@ -71,11 +74,26 @@ public:
         owned_synchronized_resources.insert_or_assign(id, std::move(resource));
     }
 
-    Resource &getResource(const std::string_view resourceId) {
+    void destroy(const std::string_view _id) {
+        std::println(stderr, "Destroying resource: {}", _id);
+        std::lock_guard<std::mutex> lock(mtx_resources);
+        std::string id(_id);
+        auto synced_res = owned_synchronized_resources.erase(id);
+        if (synced_res == 0) {
+            std::println(stderr, "WARN: unable to delete synced resource {}", id);
+        }
+        auto res = owned_resources.erase(id);
+        if (res == 0) {
+            std::println(stderr, "WARN: unable to delete resource {}", id);
+        }
+    }
+
+    std::optional<std::reference_wrapper<Resource>> getResource(const std::string_view resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         auto it = owned_synchronized_resources.find(std::string(resourceId));
         if (it == owned_synchronized_resources.end()) {
-            throw std::runtime_error(std::format("Invalid resource ID: {}", resourceId));
+            // Resource either doesn't exist or was removed
+            return std::nullopt;
         }
 
         // We return the pointer to the resource.
@@ -122,9 +140,6 @@ public:
     }
 };
 
-// Inline definition of global instance
-inline _ResourceManager& ResourceManager = _ResourceManager::create();
-
 // CRTP helper for automatic registration
 template <typename Derived>
 class RegisteredResource : public _Resource {
@@ -136,13 +151,13 @@ public:
 protected:
     RegisteredResource() = default;
 
-    static void registerResource(std::unique_ptr<Derived> &&instance) {
+    static void registerResource(std::unique_ptr<Derived> &&res) {
         static bool registered = false;
         if (!registered) {
             registered = true;
-            ResourceManager.addResource(
+            ResourceManager::instance().create(
                 Derived::RESOURCE_ID,
-                std::move(instance)
+                std::move(res)
             );
         }
     }

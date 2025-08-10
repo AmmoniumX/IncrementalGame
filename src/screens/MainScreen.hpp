@@ -28,7 +28,6 @@ class MainScreen : public Screen {
 
     Window &inventoryWindow;
     std::array<std::reference_wrapper<Text>, 3> inventoryContents;
-    Resource &inventory;
 
     Window &craftingWindow;
 
@@ -114,8 +113,12 @@ class MainScreen : public Screen {
     }
 
     void refreshInventoryCounts() {
-
-        auto lockedInventory = inventory.synchronize();
+        auto oInventory = ResourceManager::instance().getResource(Inventory::RESOURCE_ID);
+        if (!oInventory) {
+            std::println(stderr, "ERROR: MainScreen: unable to get inventory");
+            return;
+        }
+        auto lockedInventory = (*oInventory).get().synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
 
         const std::map<std::string, BigNum> items = inv->getItems();
@@ -219,7 +222,6 @@ class MainScreen : public Screen {
             inventoryWindow.putText(2, 2, ""s, GAME_COLORS::WHITE_BLACK),
             inventoryWindow.putText(3, 2, ""s, GAME_COLORS::WHITE_BLACK)
         }),
-        inventory(ResourceManager.getResource(Inventory::RESOURCE_ID)),
         craftingWindow(createWindow(5, 12, COLS - 12, LINES - 6, true, GAME_COLORS::YELLOW_BLACK)),
         upgradesWindow(createWindow(5, 12, COLS - 12, LINES - 6, false, GAME_COLORS::RED_BLACK)),
         sidebarCraftingWindow(createWindow(5, 0, 12, 3, true, GAME_COLORS::YELLOW_GRAY)),
@@ -276,7 +278,12 @@ class MainScreen : public Screen {
         refreshInventoryCounts();
 
         // Handle input
-        auto lockedInventory = inventory.synchronize();
+        auto oInventory = ResourceManager::instance().getResource(Inventory::RESOURCE_ID);
+        if (!oInventory) {
+            std::println(stderr, "ERROR: MainScreen: unable to get inventory");
+            return false;
+        }
+        auto lockedInventory = (*oInventory).get().synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
         // Process global screen inputs
         switch (input) {

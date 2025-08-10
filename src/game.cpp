@@ -6,6 +6,7 @@
 #include <print>
 #include <thread>
 
+#include "./ResourceManager.hpp"
 #include "./render/Screen.hpp"
 #include "./render/ScreenManager.hpp"
 #include "./resources/Inventory.hpp"
@@ -22,7 +23,7 @@ std::atomic_bool do_exit = false;
 } // namespace
 
 void gameTick() {
-    ResourceManager.onTick(tick);
+    ResourceManager::instance().onTick(tick);
     tick++;
 }
 

@@ -24,10 +24,10 @@ T get_or(const json &j, const std::string &key, const T &default_value) {
 }
 
 // Convert game data to json
-json to_json() { return ResourceManager.serialize(); }
+json to_json() { return ResourceManager::instance().serialize(); }
 
 // Convert json to game data
-void from_json(const json &j) { ResourceManager.deserialize(j); }
+void from_json(const json &j) { ResourceManager::instance().deserialize(j); }
 
 // Save game data
 void save(const string &filename) {
