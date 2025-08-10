@@ -30,7 +30,7 @@ void setupNcurses() {
     }
 
     if (!has_colors() || COLORS < 256) {
-        std::println(std::cerr,
+        std::println(stderr,
                      "This terminal does not support 256-bit colors! ({})",
                      COLORS);
         endwin();
@@ -44,8 +44,8 @@ void setupNcurses() {
     curs_set(0);           // Hide the cursor
 
     // Show supported colors
-    std::println(std::cerr, "Supported colors: {}", COLORS);
-    std::println(std::cerr, "Supported color pairs: {}", COLOR_PAIRS);
+    std::println(stderr, "Supported colors: {}", COLORS);
+    std::println(stderr, "Supported color pairs: {}", COLOR_PAIRS);
 
     // Initialize color pairs
     init_pair(GAME_COLORS::DEFAULT, COLOR_WHITE,

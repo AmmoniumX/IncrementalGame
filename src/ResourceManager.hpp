@@ -122,7 +122,7 @@ public:
         for (const auto& [id, data] : res_json.items()) {
             auto it = owned_synchronized_resources.find(id);
             if (it == owned_synchronized_resources.end()) {
-                std::cerr << "Resource with ID '" << id << "' not found in registry. Skipping deserialization.\n";
+                std::println(stderr, "Resource with ID {} not found in registry, Skipping", id);
                 continue;
             }
 

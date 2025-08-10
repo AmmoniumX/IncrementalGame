@@ -152,7 +152,7 @@ public:
 
     void render() {
         if (!win) {
-            std::println(std::cerr, "Window is not initialized!");
+            std::println(stderr, "Window is not initialized!");
             return;
         }
         if (!visible) return;

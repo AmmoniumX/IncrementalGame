@@ -31,29 +31,29 @@ void from_json(const json &j) { ResourceManager::instance().deserialize(j); }
 
 // Save game data
 void save(const string &filename) {
-    std::println(std::cerr, "Saving game data to {}", filename);
+    std::println(stderr, "Saving game data to {}", filename);
 
     // Convert to json
     json j = to_json();
 
     std::ofstream o(filename);
     if (!o.is_open()) {
-        std::println(std::cerr, "Error: Could not open file {}", filename);
+        std::println(stderr, "Error: Could not open file {}", filename);
         return;
     }
     o << j.dump(0) << std::endl;
 
-    std::println(std::cerr, "Game data saved!");
+    std::println(stderr, "Game data saved!");
 }
 
 // Load game data
 void load(const string &filename) {
-    std::println(std::cerr, "Loading game data from {}", filename);
+    std::println(stderr, "Loading game data from {}", filename);
 
     // Load json from file
     std::ifstream file(filename);
     if (!file.is_open()) {
-        std::println(std::cerr,
+        std::println(stderr,
                      "File not found, ResourceManager will be empty!");
         return;
     }
@@ -62,13 +62,13 @@ void load(const string &filename) {
     try {
         file >> j;
     } catch (const std::exception &e) {
-        std::println(std::cerr,
+        std::println(stderr,
                      "Error: Could not parse json! Is data corrupted? {}",
                      e.what());
         throw std::runtime_error("Could not parse json");
     }
     from_json(j);
 
-    std::println(std::cerr, "Game data loaded!");
+    std::println(stderr, "Game data loaded!");
     return;
 }

@@ -45,14 +45,14 @@ void gameWorker() {
 int run(string savefile) {
 
     // Initialize resoruces
-    std::println(std::cerr, "Registering resources...");
+    std::println(stderr, "Registering resources...");
     Inventory::create();
 
     // Load game data
     load(savefile);
 
     // Initialize ncurses
-    std::println(std::cerr, "Initializing ncurses...");
+    std::println(stderr, "Initializing ncurses...");
     setupNcurses();
 
     // Create and setup ScreenManager and Screen
@@ -62,19 +62,19 @@ int run(string savefile) {
     manager.changeScreen(&movedMainScreen.get());
 
     // Main game loop
-    std::println(std::cerr, "Starting game thread...");
+    std::println(stderr, "Starting game thread...");
     do_exit = false;
     std::thread gameThread([]() {
         gameWorker();
         return;
     });
-    std::println(std::cerr, "Game thread started. Starting render loop...");
+    std::println(stderr, "Game thread started. Starting render loop...");
     manager.run();
-    std::println(std::cerr, "Render loop ended. Waiting for game thread...");
+    std::println(stderr, "Render loop ended. Waiting for game thread...");
     // Cleanup
     do_exit = true;
     gameThread.join();
-    std::println(std::cerr, "Game thread ended");
+    std::println(stderr, "Game thread ended");
     save(savefile);
 
     return 0;
