@@ -88,17 +88,17 @@ public:
         }
     }
 
-    std::optional<std::reference_wrapper<Resource>> getResource(const std::string_view resourceId) {
+    Resource *getResource(const std::string_view resourceId) {
         std::lock_guard<std::mutex> lock(mtx_resources);
         auto it = owned_synchronized_resources.find(std::string(resourceId));
         if (it == owned_synchronized_resources.end()) {
             // Resource either doesn't exist or was removed
-            return std::nullopt;
+            return nullptr;
         }
 
         // We return the pointer to the resource.
         // The caller will then call synchronize() on this returned object.
-        return *it->second.get();
+        return it->second.get();
     }
 
     json serialize() {

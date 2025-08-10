@@ -118,7 +118,7 @@ class MainScreen : public Screen {
             std::println(stderr, "ERROR: MainScreen: unable to get inventory");
             return;
         }
-        auto lockedInventory = (*oInventory).get().synchronize();
+        auto lockedInventory = (*oInventory).synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
 
         const std::map<std::string, BigNum> items = inv->getItems();
@@ -283,7 +283,7 @@ class MainScreen : public Screen {
             std::println(stderr, "ERROR: MainScreen: unable to get inventory");
             return false;
         }
-        auto lockedInventory = (*oInventory).get().synchronize();
+        auto lockedInventory = (*oInventory).synchronize();
         Inventory *inv = static_cast<Inventory *>(*lockedInventory);
         // Process global screen inputs
         switch (input) {
