@@ -4,7 +4,6 @@
 #include <ncursesw/ncurses.h>
 #include <print>
 #include <list>
-#include <string>
 #include <string_view>
 
 #include "./setup.hpp"

@@ -120,7 +120,7 @@ class MainScreen : public Screen {
             return;
         }
         auto syncedInv = (*sharedInv).synchronize();
-        Inventory *inv = static_cast<Inventory *>(*syncedInv);
+        Inventory *inv = static_cast<Inventory *>(syncedInv->get());
 
         const std::map<std::string, BigNum> items = inv->getItems();
 
@@ -287,7 +287,7 @@ class MainScreen : public Screen {
             return;
         }
         auto syncedInv = (*sharedInv).synchronize();
-        Inventory *inv = static_cast<Inventory *>(*syncedInv);
+        Inventory *inv = static_cast<Inventory *>(syncedInv->get());
         // Process global screen inputs
         switch (input) {
         case 'q':

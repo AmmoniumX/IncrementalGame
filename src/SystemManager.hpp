@@ -1,9 +1,6 @@
 #pragma once
 
-#include <string>
-#include <memory>
 #include <mutex>
-#include <iostream>
 #include <print>
 #include <vector>
 
@@ -14,6 +11,7 @@ public:
     virtual ~System() = default;
     virtual std::string_view getId() const = 0;
     virtual void onTick() {}
+
     void requestExit() {
         GameInternals::exit = true;
     }
@@ -51,14 +49,13 @@ public:
         return Derived::RESOURCE_ID;
     }
 
-protected:
     RegisteredSystem() = default;
 
-    static void registerSystem(Derived *sys) {
+    static void registerSystem() {
         static bool registered = false;
         if (!registered) {
             registered = true;
-            SystemManager::instance().registerSystem(sys);
+            SystemManager::instance().registerSystem(&Derived::instance());
         }
     }
 };

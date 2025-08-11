@@ -26,7 +26,6 @@ public:
 
     virtual json serialize() const = 0;
     virtual void deserialize(const json& j) = 0;
-    virtual std::string_view getId() const = 0;
 
     _Resource(const _Resource&) = delete;
     _Resource& operator=(const _Resource&) = delete;
@@ -35,25 +34,28 @@ protected:
     _Resource() = default;
 };
 
-using Resource = boost::synchronized_value<_Resource*>;
+using Resource = boost::synchronized_value<std::unique_ptr<_Resource>>;
+
 class ResourceManager {
 private:
-
-    // struct SynchronizedResource {
-    //     std::unique_ptr<_Resource>> resource;
-    //     std::unique_ptr<boost::synchronized_value<_Resource*>> synchronized;
-    // }
-
     ResourceManager() = default;
 
-    // Container of uniquely owned resources
-    std::unordered_map<std::string, std::shared_ptr<_Resource>> resources;
+    // // Container of uniquely owned resources
+    // std::unordered_map<std::string, std::shared_ptr<_Resource>> resources;
 
-    // Container of shared pointers to resources, allowing thread-safe access
-    std::unordered_map<std::string, std::shared_ptr<boost::synchronized_value<_Resource*>>> owned_synchronized_resources;
-
-    // Mutex for synchronizing access to the resources
+    // // Container of shared pointers to resources, allowing thread-safe access
+    // std::unordered_map<std::string, std::shared_ptr<boost::synchronized_value<_Resource*>>> owned_synchronized_resources;
+    
+    std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
     std::mutex mtx;
+
+    std::shared_ptr<Resource> newResource(std::unique_ptr<_Resource> &&r) {
+        return std::make_shared<Resource>(boost::synchronized_value<std::unique_ptr<_Resource>>(std::move(r)));
+    }
+
+    std::shared_ptr<Resource> newResource(_Resource *r) {
+        return std::make_shared<Resource>(boost::synchronized_value<std::unique_ptr<_Resource>>(std::unique_ptr<_Resource>(r)));
+    }
 
 public:
     static ResourceManager& instance() {
@@ -64,7 +66,7 @@ public:
     std::unordered_set<std::string> getResourceIds() {
         std::lock_guard<std::mutex> lock(mtx);
         std::unordered_set<std::string> result;
-        for (const auto& [id, _] : owned_synchronized_resources) {
+        for (const auto& [id, _] : resources) {
             result.insert(id);
         }
         return result;
@@ -74,28 +76,20 @@ public:
         std::println(stderr, "Creating resource: {}", _id);
         std::lock_guard lock(mtx);
         std::string id(_id);
-        resources.insert_or_assign(id, std::shared_ptr<_Resource>(resource));
-        auto r = std::make_shared<boost::synchronized_value<_Resource*>>(resources[id].get());
-        owned_synchronized_resources.insert_or_assign(id, std::move(r));
+        resources.insert_or_assign(id, newResource(resource));
     }
 
-    void create(const std::string_view _id, std::shared_ptr<_Resource> &&resource) {
+    void create(const std::string_view _id, std::unique_ptr<_Resource> &&resource) {
         std::println(stderr, "Creating resource: {}", _id);
         std::lock_guard lock(mtx);
         std::string id(_id);
-        resources.insert_or_assign(id, std::move(resource));
-        auto r = std::make_shared<boost::synchronized_value<_Resource*>>(resources[id].get());
-        owned_synchronized_resources.insert_or_assign(id, std::move(r));
+        resources.insert_or_assign(id, newResource(std::move(resource)));
     }
 
     void destroy(const std::string_view _id) {
         std::println(stderr, "Destroying resource: {}", _id);
         std::lock_guard lock(mtx);
         std::string id(_id);
-        auto synced_res = owned_synchronized_resources.erase(id);
-        if (synced_res == 0) {
-            std::println(stderr, "WARN: unable to delete synced resource {}", id);
-        }
         auto res = resources.erase(id);
         if (res == 0) {
             std::println(stderr, "WARN: unable to delete resource {}", id);
@@ -105,8 +99,8 @@ public:
     std::weak_ptr<Resource> getResource(const std::string_view _id) {
         std::string id(_id);
         std::lock_guard lock(mtx);
-        auto it = owned_synchronized_resources.find(id);
-        if (it == owned_synchronized_resources.end()) {
+        auto it = resources.find(id);
+        if (it == resources.end()) {
             // Resource either doesn't exist or was removed
             return std::weak_ptr<Resource>{}; // empty ptr
         }
@@ -120,8 +114,8 @@ public:
         std::lock_guard lock(mtx);
         json result = json::object();
 
-        for (const auto& [id, resPtr] : owned_synchronized_resources) {
-            auto locked = resPtr->synchronize();
+        for (const auto& [id, res] : resources) {
+            auto locked = res->synchronize();
             auto serialized = (*locked)->serialize();
             result[id] = serialized;
         }
@@ -136,8 +130,8 @@ public:
         std::lock_guard lock(mtx);
 
         for (const auto& [id, data] : res_json.items()) {
-            auto it = owned_synchronized_resources.find(id);
-            if (it == owned_synchronized_resources.end()) {
+            auto it = resources.find(id);
+            if (it == resources.end()) {
                 std::println(stderr, "Resource with ID {} not found in registry, Skipping", id);
                 continue;
             }
@@ -152,32 +146,9 @@ public:
 template <typename Derived>
 class RegisteredResource : public _Resource {
 public:
-    std::string_view getId() const override {
-        return Derived::RESOURCE_ID;
-    }
-
-protected:
     RegisteredResource() = default;
 
-    static void registerResource(Derived *res) {
-        static bool registered = false;
-        if (!registered) {
-            registered = true;
-            ResourceManager::instance().create(
-                Derived::RESOURCE_ID,
-                res
-            );
-        }
-    }
-
-    static void registerResource(std::shared_ptr<Derived> &&res) {
-        static bool registered = false;
-        if (!registered) {
-            registered = true;
-            ResourceManager::instance().create(
-                Derived::RESOURCE_ID,
-                std::move(res)
-            );
-        }
+    static void registerResource(std::string_view id, std::unique_ptr<Derived> &&resource) {
+        ResourceManager::instance().create(id, std::move(resource));
     }
 };

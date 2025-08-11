@@ -32,9 +32,12 @@ class Inventory : public RegisteredResource<Inventory> {
         constexpr ItemStack(const std::string_view id, const BigNum amount) : id(id), amount(amount) {}
     };
 
-    static void create() {
-        static std::shared_ptr<Inventory> instance(new Inventory());
-        registerResource(std::move(instance));
+    static void registerInventory() {
+        static bool registered = false;
+        if (!registered) {
+            registerResource(RESOURCE_ID, std::unique_ptr<Inventory>(new Inventory));
+            registered = true;
+        }
     }
 
     const std::map<std::string, BigNum> &getItems() const { return items; }
