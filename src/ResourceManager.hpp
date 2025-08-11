@@ -47,10 +47,10 @@ private:
     ResourceManager() = default;
 
     // Container of uniquely owned resources
-    std::unordered_map<std::string, std::unique_ptr<_Resource>> resources;
+    std::unordered_map<std::string, std::shared_ptr<_Resource>> resources;
 
     // Container of shared pointers to resources, allowing thread-safe access
-    std::unordered_map<std::string, std::unique_ptr<boost::synchronized_value<_Resource*>>> owned_synchronized_resources;
+    std::unordered_map<std::string, std::shared_ptr<boost::synchronized_value<_Resource*>>> owned_synchronized_resources;
 
     // Mutex for synchronizing access to the resources
     std::mutex mtx;
@@ -70,12 +70,21 @@ public:
         return result;
     }
 
-    void create(const std::string_view _id, std::unique_ptr<_Resource>&& resource) {
+    void create(const std::string_view _id, _Resource *resource) {
+        std::println(stderr, "Creating resource: {}", _id);
+        std::lock_guard lock(mtx);
+        std::string id(_id);
+        resources.insert_or_assign(id, std::shared_ptr<_Resource>(resource));
+        auto r = std::make_shared<boost::synchronized_value<_Resource*>>(resources[id].get());
+        owned_synchronized_resources.insert_or_assign(id, std::move(r));
+    }
+
+    void create(const std::string_view _id, std::shared_ptr<_Resource> &&resource) {
         std::println(stderr, "Creating resource: {}", _id);
         std::lock_guard lock(mtx);
         std::string id(_id);
         resources.insert_or_assign(id, std::move(resource));
-        auto r = std::make_unique<boost::synchronized_value<_Resource*>>(resources[id].get());
+        auto r = std::make_shared<boost::synchronized_value<_Resource*>>(resources[id].get());
         owned_synchronized_resources.insert_or_assign(id, std::move(r));
     }
 
@@ -93,18 +102,18 @@ public:
         }
     }
 
-    Resource *getResource(const std::string_view _id) {
+    std::weak_ptr<Resource> getResource(const std::string_view _id) {
         std::string id(_id);
         std::lock_guard lock(mtx);
         auto it = owned_synchronized_resources.find(id);
         if (it == owned_synchronized_resources.end()) {
             // Resource either doesn't exist or was removed
-            return nullptr;
+            return std::weak_ptr<Resource>{}; // empty ptr
         }
 
         // We return the pointer to the resource.
         // The caller will then call synchronize() on this returned object.
-        return it->second.get();
+        return it->second;
     }
 
     json serialize() {
@@ -150,7 +159,18 @@ public:
 protected:
     RegisteredResource() = default;
 
-    static void registerResource(std::unique_ptr<Derived> &&res) {
+    static void registerResource(Derived *res) {
+        static bool registered = false;
+        if (!registered) {
+            registered = true;
+            ResourceManager::instance().create(
+                Derived::RESOURCE_ID,
+                res
+            );
+        }
+    }
+
+    static void registerResource(std::shared_ptr<Derived> &&res) {
         static bool registered = false;
         if (!registered) {
             registered = true;

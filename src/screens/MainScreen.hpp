@@ -1,17 +1,16 @@
 #pragma once
 
 #include "../ResourceManager.hpp"
-#include "../game.hpp"
 #include "../render/Screen.hpp"
 #include "../render/Text.hpp"
 #include "../render/Window.hpp"
 #include "../resources/Inventory.hpp"
+#include "../ScreenManager.hpp"
 #include <array>
 #include <cmath>
 #include <cstddef>
 #include <format>
 #include <functional>
-#include <iostream>
 #include <map>
 #include <print>
 #include <unordered_map>
@@ -52,6 +51,8 @@ class MainScreen : public Screen {
     };
     
     std::unordered_map<Subwindows, WindowGroup> windows;
+
+    std::weak_ptr<Resource> inventory;
 
     Subwindows activeWindow = CRAFTING;
 
@@ -113,13 +114,13 @@ class MainScreen : public Screen {
     }
 
     void refreshInventoryCounts() {
-        auto oInventory = ResourceManager::instance().getResource(Inventory::RESOURCE_ID);
-        if (!oInventory) {
+        auto sharedInv = inventory.lock();
+        if (!sharedInv) {
             std::println(stderr, "ERROR: MainScreen: unable to get inventory");
             return;
         }
-        auto lockedInventory = (*oInventory).synchronize();
-        Inventory *inv = static_cast<Inventory *>(*lockedInventory);
+        auto syncedInv = (*sharedInv).synchronize();
+        Inventory *inv = static_cast<Inventory *>(*syncedInv);
 
         const std::map<std::string, BigNum> items = inv->getItems();
 
@@ -229,7 +230,8 @@ class MainScreen : public Screen {
         windows({
             {CRAFTING, WindowGroup(craftingWindow, sidebarCraftingWindow, GAME_COLORS::YELLOW_GRAY, GAME_COLORS::YELLOW_BLACK)},
             {UPGRADES, WindowGroup(upgradesWindow, sidebarUpgradesWindow, GAME_COLORS::RED_GRAY, GAME_COLORS::RED_BLACK)}
-        })
+        }),
+        inventory(ResourceManager::instance().getResource(Inventory::RESOURCE_ID))
     {
         // The rest of your constructor body
         (void)inventoryWindow.setTitle("Inventory", Window::Alignment::CENTER, GAME_COLORS::YELLOW_BLACK);
@@ -279,13 +281,13 @@ class MainScreen : public Screen {
 
         // Handle input
         char input = ScreenManager::instance().getInput();
-        auto oInventory = ResourceManager::instance().getResource(Inventory::RESOURCE_ID);
-        if (!oInventory) {
+        auto sharedInv = inventory.lock();
+        if (!sharedInv) {
             std::println(stderr, "ERROR: MainScreen: unable to get inventory");
             return;
         }
-        auto lockedInventory = (*oInventory).synchronize();
-        Inventory *inv = static_cast<Inventory *>(*lockedInventory);
+        auto syncedInv = (*sharedInv).synchronize();
+        Inventory *inv = static_cast<Inventory *>(*syncedInv);
         // Process global screen inputs
         switch (input) {
         case 'q':

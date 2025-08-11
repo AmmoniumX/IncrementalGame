@@ -33,7 +33,7 @@ class Inventory : public RegisteredResource<Inventory> {
     };
 
     static void create() {
-        static std::unique_ptr<Inventory> instance(new Inventory());
+        static std::shared_ptr<Inventory> instance(new Inventory());
         registerResource(std::move(instance));
     }
 
