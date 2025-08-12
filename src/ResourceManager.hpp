@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <print>
 #include <format>
 #include <string>
@@ -131,16 +130,5 @@ public:
             auto locked = it->second->synchronize();
             (*locked)->deserialize(data);
         }
-    }
-};
-
-// CRTP helper for automatic registration
-template <typename Derived>
-class RegisteredResource : public detail::Resource {
-public:
-    RegisteredResource() = default;
-
-    static void registerResource(std::string_view id, std::unique_ptr<Derived> &&resource) {
-        ResourceManager::instance().create(id, std::move(resource));
     }
 };

@@ -42,7 +42,7 @@ void run() {
 void setup(std::string savefile) {
     // Initialize resoruces
     std::println(stderr, "Registering resources...");
-    Inventory::registerInventory();
+    Inventory::init();
 
     // Load game data
     load(savefile);

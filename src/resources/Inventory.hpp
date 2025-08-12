@@ -10,7 +10,7 @@
 using namespace std::literals::string_literals;
 using namespace std::literals::string_view_literals;
 
-class Inventory : public RegisteredResource<Inventory> {
+class Inventory : public detail::Resource {
   private:
     std::map<std::string, BigNum> items;
     Inventory() {}
@@ -32,10 +32,10 @@ class Inventory : public RegisteredResource<Inventory> {
         constexpr ItemStack(const std::string_view id, const BigNum amount) : id(id), amount(amount) {}
     };
 
-    static void registerInventory() {
+    static void init() {
         static bool registered = false;
         if (!registered) {
-            registerResource(RESOURCE_ID, std::unique_ptr<Inventory>(new Inventory));
+            ResourceManager::instance().create(RESOURCE_ID, std::unique_ptr<Inventory>(new Inventory));
             registered = true;
         }
     }
@@ -69,7 +69,7 @@ class Inventory : public RegisteredResource<Inventory> {
         }
     }
 
-    virtual json serialize() const override {
+    json serialize() const override {
         json j = json::object();
         for (const auto &item : items) {
             j[item.first] = item.second.serialize();
@@ -77,7 +77,7 @@ class Inventory : public RegisteredResource<Inventory> {
         return j;
     }
 
-    virtual void deserialize(const json &j) override {
+    void deserialize(const json &j) override {
         for (const auto &[key, value] : j.items()) {
             std::string valueStr =
                 value.is_string() ? value.get<std::string>() : "0";
@@ -88,4 +88,5 @@ class Inventory : public RegisteredResource<Inventory> {
     // Prevent copying and assignment
     Inventory(const Inventory &) = delete;
     Inventory &operator=(const Inventory &) = delete;
+    ~Inventory() = default;
 };
