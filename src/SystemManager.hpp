@@ -10,6 +10,7 @@ class System {
 public:
     virtual ~System() = default;
     virtual std::string_view getId() const = 0;
+    virtual void init() {}
     virtual void onTick() {}
 
     void requestExit() {

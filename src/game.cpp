@@ -13,6 +13,7 @@
 #include "./SystemManager.hpp"
 #include "./screens/MainScreen.hpp"
 #include "./resources/Inventory.hpp"
+#include "./resources/Recipes.hpp"
 #include "game.hpp"
 #include "setup.hpp"
 
@@ -43,6 +44,7 @@ void setup(std::string savefile) {
     // Initialize resoruces
     std::println(stderr, "Registering resources...");
     Inventory::init();
+    Recipes::init();
 
     // Load game data
     load(savefile);

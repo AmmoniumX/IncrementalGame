@@ -5,6 +5,7 @@
 #include "../render/Text.hpp"
 #include "../render/Window.hpp"
 #include "../resources/Inventory.hpp"
+#include "../resources/Recipes.hpp"
 #include "../ScreenManager.hpp"
 #include <array>
 #include <cmath>
@@ -52,39 +53,10 @@ class MainScreen : public Screen {
     
     std::unordered_map<Subwindows, WindowGroup> windows;
 
-    std::weak_ptr<Resource> inventory;
+    std::shared_ptr<Resource> inventory;
+    std::shared_ptr<Resource> recipes;
 
     Subwindows activeWindow = CRAFTING;
-
-    template<size_t NumIn, size_t NumOut>
-    struct Recipe {
-        const std::array<const Inventory::ItemStack, NumIn> inputs;
-        const std::array<const Inventory::ItemStack, NumOut> outputs;
-    };
-
-    struct Recipes {
-        static inline const Recipe<0, 1> IRON_INGOT = {
-            {},
-            {Inventory::ItemStack(Inventory::Items::IRON, 1)}
-        };
-        static inline const Recipe<0, 1> COPPER_INGOT = {
-            {},
-            {Inventory::ItemStack(Inventory::Items::COPPER, 1)}
-        };
-        static inline const Recipe<1, 1> IRON_GEAR = {
-            {Inventory::ItemStack(Inventory::Items::IRON, 4)},
-            {Inventory::ItemStack(Inventory::Items::IRON_GEAR, 1)}
-        };
-        static inline const Recipe<1, 1> COPPER_WIRE = {
-            {Inventory::ItemStack(Inventory::Items::COPPER, 1)},
-            {Inventory::ItemStack(Inventory::Items::COPPER_WIRE, 3)}
-        };
-        static inline const Recipe<2, 1> MOTOR = {
-            {Inventory::ItemStack(Inventory::Items::IRON_GEAR, 2),
-                 Inventory::ItemStack(Inventory::Items::COPPER_WIRE, 10)},
-            {Inventory::ItemStack(Inventory::Items::MOTOR, 1)}
-        };
-    };
 
     void notify(const std::string &text) {
         notifyText.setText(text, true);
@@ -113,13 +85,14 @@ class MainScreen : public Screen {
         (w.sidebar.get()).setColorPair(w.activeColor);
     }
 
+    template <typename T>
+    T getOrThrow(const std::optional<T>& opt, const std::string& msg) {
+        if (!opt) throw std::runtime_error(msg);
+        return *opt;
+    }
+
     void refreshInventoryCounts() {
-        auto sharedInv = inventory.lock();
-        if (!sharedInv) {
-            std::println(stderr, "ERROR: MainScreen: unable to get inventory");
-            return;
-        }
-        auto syncedInv = (*sharedInv).synchronize();
+        auto syncedInv = inventory->synchronize();
         Inventory *inv = static_cast<Inventory *>(syncedInv->get());
 
         const std::map<std::string, BigNum> items = inv->getItems();
@@ -175,34 +148,28 @@ class MainScreen : public Screen {
     }
 
     int numCraftingOptions = 0;
-    template<TextString T, size_t NumIn, size_t NumOut>
+    template<TextString T>
     void addCraftingOption(char input, std::initializer_list<Text::TextChunk<T>> init, 
-            Recipe<NumIn, NumOut> recipe) {
+            Recipes::Recipe recipe) {
         craftingWindow.putText<std::string>(++numCraftingOptions, 1, init);
         registerListener(input, [recipe](MainScreen *scr, Inventory *inv) {
             scr->attemptRecipe(inv, recipe);
         });
     }
 
-    template<size_t NumIn, size_t NumOut>
-        requires(NumOut > 0)
-    bool attemptRecipe(Inventory *inv, Recipe<NumIn, NumOut> recipe) {
+    bool attemptRecipe(Inventory *inv, Recipes::Recipe recipe) {
 
         // Check feasibility
-        if constexpr (NumIn > 0) {
-            for (const auto &input : recipe.inputs) {
-                if (inv->getItem(input.id) < input.amount) {
-                    notify(std::format("Not enough items: {}", input.id));
-                    return false;
-                }
+        for (const auto &input : recipe.inputs) {
+            if (inv->getItem(input.id) < input.amount) {
+                notify(std::format("Not enough items: {}", input.id));
+                return false;
             }
         }
 
         // Execute craft
-        if constexpr (NumIn > 0) {
-            for (const auto &input : recipe.inputs) {
-                inv->subtractItem(input.id, input.amount);
-            }
+        for (const auto &input : recipe.inputs) {
+            inv->subtractItem(input.id, input.amount);
         }
         for (const auto &output : recipe.outputs) {
             inv->addItem(output.id, output.amount);
@@ -231,36 +198,40 @@ class MainScreen : public Screen {
             {CRAFTING, WindowGroup(craftingWindow, sidebarCraftingWindow, GAME_COLORS::YELLOW_GRAY, GAME_COLORS::YELLOW_BLACK)},
             {UPGRADES, WindowGroup(upgradesWindow, sidebarUpgradesWindow, GAME_COLORS::RED_GRAY, GAME_COLORS::RED_BLACK)}
         }),
-        inventory(ResourceManager::instance().getResource(Inventory::RESOURCE_ID))
+        inventory(ResourceManager::instance().getResource(Inventory::RESOURCE_ID)),
+        recipes(ResourceManager::instance().getResource(Recipes::RESOURCE_ID))
     {
         // The rest of your constructor body
         (void)inventoryWindow.setTitle("Inventory", Window::Alignment::CENTER, GAME_COLORS::YELLOW_BLACK);
         (void)upgradesWindow.setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
         upgradeOptions.emplace("example_upgrade", upgradesWindow.putText(1, 1, "Example"s));
         (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
-        addCraftingOption<std::string, 0, 1>('1', {
+        auto syncedRecipes = recipes->synchronize();
+        Recipes *rec = static_cast<Recipes*>(syncedRecipes->get());
+        using Items = Inventory::Items;
+        addCraftingOption<std::string>('1', {
                         {GAME_COLORS::WHITE_BLACK, "[1] "s},
                         {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}
-                    }, Recipes::IRON_INGOT);
-        addCraftingOption<std::string, 0, 1>('2', {
+                    }, getOrThrow(rec->get(Items::IRON), "Invalid recipe"));
+        addCraftingOption<std::string>('2', {
                     {GAME_COLORS::WHITE_BLACK, "[2] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}
-                }, Recipes::COPPER_INGOT);
-        addCraftingOption<std::string, 1, 1>('3', {
+                }, getOrThrow(rec->get(Items::COPPER), "Invalid recipe"));
+        addCraftingOption<std::string>('3', {
                     {GAME_COLORS::WHITE_BLACK, "[3] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Iron Gear 1x "s},
                     {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}
-                }, Recipes::IRON_GEAR);
-        addCraftingOption<std::string, 1, 1>('4', {
+                }, getOrThrow(rec->get(Items::IRON_GEAR), "Invalid recipe"));
+        addCraftingOption<std::string>('4', {
                         {GAME_COLORS::WHITE_BLACK, "[4] "s},
                         {GAME_COLORS::YELLOW_BLACK, "Copper Wire 3x "s},
                         {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}
-                    }, Recipes::COPPER_WIRE);
-        addCraftingOption<std::string, 2, 1>('5', {
+                    }, getOrThrow(rec->get(Items::COPPER_WIRE), "Invalid recipe"));
+        addCraftingOption<std::string>('5', {
                         {GAME_COLORS::WHITE_BLACK, "[5] "s},
                         {GAME_COLORS::YELLOW_BLACK, "Motor 1x "s},
                         {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"s}
-                    }, Recipes::MOTOR);
+                    }, getOrThrow(rec->get(Items::MOTOR), "Invalid recipe"));
         (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s, GAME_COLORS::DEFAULT);
         (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s, GAME_COLORS::DEFAULT);
     }
@@ -281,12 +252,7 @@ class MainScreen : public Screen {
 
         // Handle input
         char input = ScreenManager::instance().getInput();
-        auto sharedInv = inventory.lock();
-        if (!sharedInv) {
-            std::println(stderr, "ERROR: MainScreen: unable to get inventory");
-            return;
-        }
-        auto syncedInv = (*sharedInv).synchronize();
+        auto syncedInv = inventory->synchronize();
         Inventory *inv = static_cast<Inventory *>(syncedInv->get());
         // Process global screen inputs
         switch (input) {

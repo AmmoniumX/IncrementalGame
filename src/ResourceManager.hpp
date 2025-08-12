@@ -1,9 +1,9 @@
 #pragma once
 
-#include <print>
 #include <format>
+#include <optional>
+#include <print>
 #include <string>
-#include <string_view>
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
@@ -20,8 +20,8 @@ class Resource {
 public:
     virtual ~Resource() = default;
 
-    virtual json serialize() const = 0;
-    virtual void deserialize(const json& j) = 0;
+    virtual std::optional<json> serialize() const { return std::nullopt; };
+    virtual void deserialize([[maybe_unused]] const json& j) {};
 
     Resource(const Resource&) = delete;
     Resource& operator=(const Resource&) = delete;
@@ -63,42 +63,52 @@ public:
         return result;
     }
 
-    void create(const std::string_view _id, detail::Resource *resource) {
-        std::println(stderr, "Creating resource: {}", _id);
+    void create(std::string id, detail::Resource *resource) {
+        std::println(stderr, "Creating resource: {}", id);
         std::lock_guard lock(mtx);
-        std::string id(_id);
         resources.insert_or_assign(id, newResource(resource));
     }
 
-    void create(const std::string_view _id, std::unique_ptr<detail::Resource> &&resource) {
-        std::println(stderr, "Creating resource: {}", _id);
+    void create(std::string id, std::unique_ptr<detail::Resource> &&resource) {
+        std::println(stderr, "Creating resource: {}", id);
         std::lock_guard lock(mtx);
-        std::string id(_id);
         resources.insert_or_assign(id, newResource(std::move(resource)));
     }
 
-    void destroy(const std::string_view _id) {
-        std::println(stderr, "Destroying resource: {}", _id);
+    void destroy(std::string id) {
+        std::println(stderr, "Destroying resource: {}", id);
         std::lock_guard lock(mtx);
-        std::string id(_id);
         auto res = resources.erase(id);
         if (res == 0) {
             std::println(stderr, "WARN: unable to delete resource {}", id);
         }
     }
 
-    std::weak_ptr<Resource> getResource(const std::string_view _id) {
-        std::string id(_id);
+    // Throws std::runtime_error on resource not found
+    std::shared_ptr<Resource> getResource(std::string id) {
+        using namespace std::literals::string_literals;
         std::lock_guard lock(mtx);
-        auto it = resources.find(id);
-        if (it == resources.end()) {
-            // Resource either doesn't exist or was removed
-            return std::weak_ptr<Resource>{}; // empty ptr
+        if (auto r = resources.find(id); r != resources.end()) {
+            return r->second;
         }
+        throw std::runtime_error("Resource not found");
+    }
 
-        // We return the pointer to the resource.
-        // The caller will then call synchronize() on this returned object.
-        return it->second;
+    std::weak_ptr<Resource> getResourceWeak(std::string id) {
+        std::lock_guard lock(mtx);
+        if (auto r = resources.find(id); r != resources.end()) {
+            return r->second;
+        }
+        return std::weak_ptr<Resource>{}; // return empty ptr
+    }
+
+    std::optional<std::shared_ptr<Resource>> getResourceOptional(std::string id) {
+        using namespace std::literals::string_literals;
+        std::lock_guard lock(mtx);
+        if (auto r = resources.find(id); r != resources.end()) {
+            return r->second;
+        }
+        return std::nullopt;
     }
 
     json serialize() {
@@ -108,7 +118,7 @@ public:
         for (const auto& [id, res] : resources) {
             auto locked = res->synchronize();
             auto serialized = (*locked)->serialize();
-            result[id] = serialized;
+            if (serialized) { result[id] = *serialized; } // only serialize needed resources
         }
 
         return json{{"resources", result}};

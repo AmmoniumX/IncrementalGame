@@ -1,6 +1,7 @@
 #pragma once
 
 #include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -8,7 +9,6 @@
 #include "../game.hpp"
 
 using namespace std::literals::string_literals;
-using namespace std::literals::string_view_literals;
 
 class Inventory : public detail::Resource {
   private:
@@ -16,20 +16,19 @@ class Inventory : public detail::Resource {
     Inventory() {}
     
   public:
-    static constexpr std::string_view RESOURCE_ID = "Inventory"sv;
+    static inline const std::string RESOURCE_ID = "Inventory"s;
 
     struct Items {
-        static constexpr std::string_view IRON = "Iron"sv;
-        static constexpr std::string_view COPPER = "Copper"sv;
-        static constexpr std::string_view IRON_GEAR = "Iron Gear"sv;
-        static constexpr std::string_view COPPER_WIRE = "Copper Wire"sv;
-        static constexpr std::string_view MOTOR = "Motor"sv;
+        static inline const std::string IRON = "Iron"s;
+        static inline const std::string COPPER = "Copper"s;
+        static inline const std::string IRON_GEAR = "Iron Gear"s;
+        static inline const std::string COPPER_WIRE = "Copper Wire"s;
+        static inline const std::string MOTOR = "Motor"s;
     };
 
     struct ItemStack {
-        const std::string_view id;
+        const std::string id;
         const BigNum amount;
-        constexpr ItemStack(const std::string_view id, const BigNum amount) : id(id), amount(amount) {}
     };
 
     static void init() {
@@ -69,7 +68,7 @@ class Inventory : public detail::Resource {
         }
     }
 
-    json serialize() const override {
+    std::optional<json> serialize() const override {
         json j = json::object();
         for (const auto &item : items) {
             j[item.first] = item.second.serialize();
