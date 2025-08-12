@@ -2,69 +2,59 @@
 CXX = g++
 
 # C++ Standard (Recommended: gnu++26, minimum: c++23)
-CXXSTD =gnu++26
+CXXSTD = gnu++26
 
 # Common Flags
-CXXFLAGS =-Wall -Wextra -Werror -std=$(CXXSTD) -march=native
+CXXFLAGS = -Wall -Wextra -Werror -std=$(CXXSTD) -march=native
 
 # Set to enable certain constexpr optimizations
-CXXFLAGS +=-fno-trapping-math -DNO_TRAPPING_MATH
+CXXFLAGS += -fno-trapping-math -DNO_TRAPPING_MATH
 
 # Libraries
 EXTRA_INCLUDES ?=
 EXTRA_LDFLAGS ?=
-INCLUDES=-I/usr/include $(EXTRA_INCLUDES)
-LDFLAGS =-lncursesw -lboost_thread $(EXTRA_LDFLAGS)
+INCLUDES= -I/usr/include $(EXTRA_INCLUDES)
+LDFLAGS = -lncursesw -lboost_thread $(EXTRA_LDFLAGS)
 
-# Source and Header Files
-CORE_HDRS = $(wildcard src/*.hpp)
-RENDER_HDRS = $(wildcard src/render/*.hpp)
-SCREENS_HDRS = $(wildcard src/screens/*.hpp)
-WINDOWS_HDRS = $(wildcard src/windows/*.hpp)
-RESOURCES_HDRS = $(wildcard src/resources/*.hpp)
-SYSTEMS_HDRS = $(wildcard src/systems/*.hpp)
-HDRS = $(CORE_HDRS) $(RENDER_HDRS) $(SCREENS_HDRS) $(WINDOWS_HDRS) $(RESOURCES_HDRS) $(SYSTEMS_HDRS)
-SRCS = $(wildcard src/*.cpp)
+SRCS = $(shell find src -name '*.cpp')
 
 # Default: build release
-# --- Release Build ---
-RELEASE_DIR = bin/release
-RELEASE_OBJ_DIR = obj/release
-RELEASE_TARGET = $(RELEASE_DIR)/game
-RELEASE_OBJS = $(patsubst %.cpp,$(RELEASE_OBJ_DIR)/%.o,$(SRCS))
-RELEASE_CXXFLAGS =$(CXXFLAGS) -O3 -fsanitize=address,undefined
+BUILD_TYPE ?= release
 
-release: $(RELEASE_TARGET)
+ifeq ($(BUILD_TYPE),release)
+    # --- Release Build ---
+    BIN_DIR = bin/release
+    OBJ_DIR = obj/release
+    TARGET = $(BIN_DIR)/game
+    OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+    CXXFLAGS += -O3 -fsanitize=address,undefined
 
-$(RELEASE_TARGET): $(RELEASE_OBJS)
-	@mkdir -p $(RELEASE_DIR)
-	$(CXX) -o $@ $^ $(LDFLAGS) $(RELEASE_CXXFLAGS)
+else ifeq ($(BUILD_TYPE),debug)
+    # --- Debug Build ---
+    BIN_DIR = bin/debug
+    OBJ_DIR = obj/debug
+    TARGET = $(BIN_DIR)/game
+    OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+    CXXFLAGS += -g -O0
+endif
 
-$(RELEASE_OBJ_DIR)/%.o: %.cpp $(HDRS)
+$(TARGET): $(OBJS)
+	@mkdir -p $(BIN_DIR)
+	$(CXX) -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
+
+$(OBJ_DIR)/%.o: %.cpp %.hpp
 	@mkdir -p $(@D)
-	$(CXX) $(RELEASE_CXXFLAGS) $(INCLUDES) -c -o $@ $<
-
-
-# --- Debug Build ---
-DEBUG_DIR = bin/debug
-DEBUG_OBJ_DIR = obj/debug
-DEBUG_TARGET = $(DEBUG_DIR)/game
-DEBUG_OBJS = $(patsubst %.cpp,$(DEBUG_OBJ_DIR)/%.o,$(SRCS))
-DEBUG_CXXFLAGS =$(CXXFLAGS) -g -O0
-
-debug: $(DEBUG_TARGET)
-
-$(DEBUG_TARGET): $(DEBUG_OBJS)
-	@mkdir -p $(DEBUG_DIR)
-	$(CXX) -o $@ $^ $(LDFLAGS) $(DEBUG_CXXFLAGS)
-
-$(DEBUG_OBJ_DIR)/%.o: %.cpp $(HDRS)
-	@mkdir -p $(@D)
-	$(CXX) $(DEBUG_CXXFLAGS) $(INCLUDES) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
 # --- Phony Targets ---
 all: debug release
 clean:
-	rm -rf ./obj/ ./bin/
+	rm -rf ./obj/* ./bin/*
+
+debug:
+	$(MAKE) BUILD_TYPE=debug
+
+release:
+	$(MAKE) BUILD_TYPE=release
 
 .PHONY: all clean debug release

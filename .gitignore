@@ -33,6 +33,7 @@
 
 # Bin directory
 bin/
+obj/
 
 # VS Code
 .vscode/
