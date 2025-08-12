@@ -9,8 +9,7 @@
 class System {
 public:
     virtual ~System() = default;
-    virtual std::string_view getId() const = 0;
-    virtual void init() {}
+    virtual void onInit() {}
     virtual void onTick() {}
 
     void requestExit() {
@@ -25,6 +24,9 @@ private:
     std::mutex mtx;
 
 public:
+
+    static void init();
+
     static SystemManager &instance() {
         static SystemManager instance;
         return instance;
@@ -42,21 +44,3 @@ public:
     }
 };
 
-// CRTP helper for automatic registration
-template <typename Derived>
-class RegisteredSystem : public System {
-public:
-    std::string_view getId() const override {
-        return Derived::RESOURCE_ID;
-    }
-
-    RegisteredSystem() = default;
-
-    static void registerSystem() {
-        static bool registered = false;
-        if (!registered) {
-            registered = true;
-            SystemManager::instance().registerSystem(&Derived::instance());
-        }
-    }
-};

@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "../json.hpp"
-#include "../ResourceManager.hpp"
+#include "../systems/ResourceManager.hpp"
 #include "./Inventory.hpp"
 
 class Recipes : public detail::Resource {

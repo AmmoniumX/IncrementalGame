@@ -6,7 +6,7 @@
 #include <print>
 
 #include "BigNum.hpp"
-#include "ResourceManager.hpp"
+#include "./systems/ResourceManager.hpp"
 #include "json.hpp"
 
 using nlohmann::json;
@@ -43,7 +43,7 @@ void save(const string &filename) {
     }
     o << j.dump(0) << std::endl;
 
-    std::println(stderr, "Game data saved!");
+    // std::println(stderr, "Game data saved!");
 }
 
 // Load game data
@@ -69,6 +69,6 @@ void load(const string &filename) {
     }
     from_json(j);
 
-    std::println(stderr, "Game data loaded!");
+    // std::println(stderr, "Game data loaded!");
     return;
 }

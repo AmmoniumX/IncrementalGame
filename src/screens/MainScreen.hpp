@@ -1,12 +1,12 @@
 #pragma once
 
-#include "../ResourceManager.hpp"
 #include "../render/Screen.hpp"
 #include "../render/Text.hpp"
 #include "../render/Window.hpp"
 #include "../resources/Inventory.hpp"
 #include "../resources/Recipes.hpp"
-#include "../ScreenManager.hpp"
+#include "../systems/ScreenManager.hpp"
+#include "../systems/ResourceManager.hpp"
 #include <array>
 #include <cmath>
 #include <cstddef>

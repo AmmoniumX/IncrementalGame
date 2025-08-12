@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 
-#include "../ResourceManager.hpp"
 #include "../game.hpp"
+#include "../systems/ResourceManager.hpp"
 
 using namespace std::literals::string_literals;
 
@@ -32,6 +32,7 @@ class Inventory : public detail::Resource {
     };
 
     static void init() {
+        // std::println(stderr, "Registering inventory...");
         static bool registered = false;
         if (!registered) {
             ResourceManager::instance().create(RESOURCE_ID, std::unique_ptr<Inventory>(new Inventory));

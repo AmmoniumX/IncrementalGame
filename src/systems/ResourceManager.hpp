@@ -11,7 +11,8 @@
 
 #include <boost/thread/synchronized_value.hpp>
 
-#include "./json.hpp"
+#include "../json.hpp"
+#include "../SystemManager.hpp"
 
 using nlohmann::json;
 
@@ -33,7 +34,7 @@ protected:
 
 using Resource = boost::synchronized_value<std::unique_ptr<detail::Resource>>;
 
-class ResourceManager {
+class ResourceManager : public System {
 private:
     ResourceManager() = default;
     
@@ -49,6 +50,9 @@ private:
     }
 
 public:
+
+    static void init();
+
     static ResourceManager& instance() {
         static ResourceManager instance;
         return instance;
@@ -91,7 +95,7 @@ public:
         if (auto r = resources.find(id); r != resources.end()) {
             return r->second;
         }
-        throw std::runtime_error("Resource not found");
+        throw std::runtime_error("Resource not found: "s + id);
     }
 
     std::weak_ptr<Resource> getResourceWeak(std::string id) {

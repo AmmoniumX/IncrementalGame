@@ -6,9 +6,9 @@
 #include <list>
 #include <string_view>
 
-#include "./setup.hpp"
-#include "./SystemManager.hpp"
-#include "./render/Screen.hpp"
+#include "../setup.hpp"
+#include "../SystemManager.hpp"
+#include "../render/Screen.hpp"
 
 using namespace std::literals::string_view_literals;
 
@@ -16,7 +16,7 @@ using namespace std::literals::string_view_literals;
 * @class ScreenManager
 * @brief A class to manage the current screen and handle screen changes.
 */
-class ScreenManager : public RegisteredSystem<ScreenManager> { // Singleton class
+class ScreenManager : public System { // Singleton class
 private:
     Screen *currentScreen = nullptr;
     Screen *nextScreen = nullptr;
@@ -32,6 +32,8 @@ private:
 
 public:
     static constexpr std::string_view RESOURCE_ID = "ScreenManager"sv;
+
+    static void init();
 
     static ScreenManager &instance() {
         static ScreenManager instance;

@@ -8,14 +8,40 @@
 #include <string>
 
 #include "./render/Screen.hpp"
-#include "./ScreenManager.hpp"
-#include "./ResourceManager.hpp"
 #include "./SystemManager.hpp"
+#include "./systems/ScreenManager.hpp"
+#include "./systems/ResourceManager.hpp"
 #include "./screens/MainScreen.hpp"
 #include "./resources/Inventory.hpp"
 #include "./resources/Recipes.hpp"
 #include "game.hpp"
 #include "setup.hpp"
+
+void ResourceManager::init() {
+    std::println(stderr, "Registering resources...");
+    Inventory::init();
+    Recipes::init();
+}
+
+void ScreenManager::init() {
+    std::println(stderr, "Registering screens...");
+    // Create and setup ScreenManager and Screen
+    ScreenManager &instance = ScreenManager::instance();
+    std::unique_ptr<Screen> mainScreen = MainScreen::create();
+    std::reference_wrapper<Screen> movedMainScreen = instance.registerScreen(std::move(mainScreen));
+    instance.changeScreen(&movedMainScreen.get());
+}
+
+void SystemManager::init() {
+    std::println(stderr, "Registering systems...");
+
+    ResourceManager::init();
+    SystemManager::instance().registerSystem(&ResourceManager::instance());
+
+    ScreenManager::init();
+    SystemManager::instance().registerSystem(&ScreenManager::instance());
+
+}
 
 using nlohmann::json;
 
@@ -40,30 +66,20 @@ void run() {
     std::println(stderr, "Exiting...");
 }
 
-void setup(std::string savefile) {
-    // Initialize resoruces
-    std::println(stderr, "Registering resources...");
-    Inventory::init();
-    Recipes::init();
-
-    // Load game data
-    load(savefile);
+void init(std::string savefile) {
     
     // Initialize ncurses
     std::println(stderr, "Initializing ncurses...");
     setupNcurses();    
 
     // Initialize systems
-    std::println(stderr, "Registering systems...");
-    // Create and setup ScreenManager and Screen
-    ScreenManager &screenManager = ScreenManager::instance();
-    std::unique_ptr<Screen> mainScreen = MainScreen::create();
-    std::reference_wrapper<Screen> movedMainScreen = screenManager.registerScreen(std::move(mainScreen));
-    screenManager.changeScreen(&movedMainScreen.get());
-    SystemManager::instance().registerSystem(&screenManager);
+    SystemManager::init();
+
+    // Load game data
+    load(savefile);
 }
 
-void setdown(std::string savefile) {
+void cleanup(std::string savefile) {
     // Save game data
     save(savefile);
 }
@@ -87,9 +103,9 @@ int main(int argc, char *argv[]) {
     }
 
     // Setup
-    setup(savefile);
+    init(savefile);
     run();
-    setdown(savefile);
+    cleanup(savefile);
 
     return 0;
 }
