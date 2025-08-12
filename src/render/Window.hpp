@@ -3,14 +3,13 @@
 #include <ncursesw/ncurses.h>
 #include <string>
 #include <memory>
-#include <iostream>
 #include <initializer_list>
 #include <print>
 #include <vector>
 #include <span>
 #include <functional>
 
-#include "../setup.hpp"
+#include "../game.hpp"
 #include "./Text.hpp"
 
 /*
