@@ -26,7 +26,7 @@ ifeq ($(BUILD_TYPE),release)
     BIN_DIR = bin/release
     OBJ_DIR = obj/release
     TARGET = $(BIN_DIR)/game
-    OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+	OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
     CXXFLAGS += -O3 -fsanitize=address,undefined
 
 else ifeq ($(BUILD_TYPE),debug)
@@ -34,7 +34,7 @@ else ifeq ($(BUILD_TYPE),debug)
     BIN_DIR = bin/debug
     OBJ_DIR = obj/debug
     TARGET = $(BIN_DIR)/game
-    OBJS = $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+	OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
     CXXFLAGS += -g -O0
 endif
 
@@ -42,7 +42,7 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
 
-$(OBJ_DIR)/%.o: %.cpp %.hpp
+$(OBJ_DIR)/%.o: src/%.cpp src/%.hpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
