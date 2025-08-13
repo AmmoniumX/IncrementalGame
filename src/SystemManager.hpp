@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mutex>
 #include <print>
 #include <vector>
 
@@ -17,7 +16,6 @@ class SystemManager {
 private:
     SystemManager() = default;
     std::vector<System*> systems;
-    std::mutex mtx;
 
 public:
 

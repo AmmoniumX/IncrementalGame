@@ -6,7 +6,6 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
-#include <mutex>
 
 #include "../json.hpp"
 #include "../SystemManager.hpp"
@@ -32,7 +31,6 @@ private:
     ResourceManager() = default;
     
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
-    std::mutex mtx;
 
 public:
 

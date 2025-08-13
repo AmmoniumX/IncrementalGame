@@ -30,7 +30,6 @@ SystemManager &SystemManager::instance() {
 
 
 void SystemManager::registerSystem(System *system) {
-    std::lock_guard lock(mtx);
     systems.push_back(system);
 }
 

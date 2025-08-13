@@ -20,7 +20,6 @@ ResourceManager& ResourceManager::instance() {
 }
 
 std::unordered_set<std::string> ResourceManager::getResourceIds() {
-    std::lock_guard<std::mutex> lock(mtx);
     std::unordered_set<std::string> result;
     for (const auto& [id, _] : resources) {
         result.insert(id);
@@ -30,19 +29,16 @@ std::unordered_set<std::string> ResourceManager::getResourceIds() {
 
 void ResourceManager::create(std::string id, Resource *resource) {
     std::println(stderr, "Creating resource: {}", id);
-    std::lock_guard lock(mtx);
     resources.insert_or_assign(id, std::unique_ptr<Resource>(resource));
 }
 
 void ResourceManager::create(std::string id, std::shared_ptr<Resource> &&resource) {
     std::println(stderr, "Creating resource: {}", id);
-    std::lock_guard lock(mtx);
     resources.insert_or_assign(id, std::move(resource));
 }
 
 void ResourceManager::destroy(std::string id) {
     std::println(stderr, "Destroying resource: {}", id);
-    std::lock_guard lock(mtx);
     auto res = resources.erase(id);
     if (res == 0) {
         std::println(stderr, "WARN: unable to delete resource {}", id);
@@ -51,7 +47,6 @@ void ResourceManager::destroy(std::string id) {
 
 std::shared_ptr<Resource> ResourceManager::getResource(std::string id) {
     using namespace std::literals::string_literals;
-    std::lock_guard lock(mtx);
     if (auto r = resources.find(id); r != resources.end()) {
         return r->second;
     }
@@ -59,7 +54,6 @@ std::shared_ptr<Resource> ResourceManager::getResource(std::string id) {
 }
 
 std::weak_ptr<Resource> ResourceManager::getResourceWeak(std::string id) {
-    std::lock_guard lock(mtx);
     if (auto r = resources.find(id); r != resources.end()) {
         return r->second;
     }
@@ -68,7 +62,6 @@ std::weak_ptr<Resource> ResourceManager::getResourceWeak(std::string id) {
 
 std::optional<std::shared_ptr<Resource>> ResourceManager::getResourceOptional(std::string id) {
     using namespace std::literals::string_literals;
-    std::lock_guard lock(mtx);
     if (auto r = resources.find(id); r != resources.end()) {
         return r->second;
     }
@@ -76,7 +69,6 @@ std::optional<std::shared_ptr<Resource>> ResourceManager::getResourceOptional(st
 }
 
 json ResourceManager::serialize() {
-    std::lock_guard lock(mtx);
     json result = json::object();
 
     for (const auto& [id, res] : resources) {
@@ -91,7 +83,6 @@ void ResourceManager::deserialize(const json& j) {
     if (!j.contains("resources")) return;
 
     const auto& res_json = j.at("resources");
-    std::lock_guard lock(mtx);
 
     for (const auto& [id, data] : res_json.items()) {
         auto it = resources.find(id);
