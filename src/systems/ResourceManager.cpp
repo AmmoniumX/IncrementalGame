@@ -8,19 +8,11 @@ void ResourceManager::init() {
     Recipes::init();
 }
 
-std::optional<json> detail::Resource::serialize() const {
+std::optional<json> Resource::serialize() const {
     return std::nullopt; 
 };
 
-void detail::Resource::deserialize([[maybe_unused]] const json& j) {};
-
-std::shared_ptr<Resource> ResourceManager::newResource(std::unique_ptr<detail::Resource> &&r) {
-    return std::make_shared<Resource>(boost::synchronized_value<std::unique_ptr<detail::Resource>>(std::move(r)));
-}
-
-std::shared_ptr<Resource> ResourceManager::newResource(detail::Resource *r) {
-    return std::make_shared<Resource>(boost::synchronized_value<std::unique_ptr<detail::Resource>>(std::unique_ptr<detail::Resource>(r)));
-}
+void Resource::deserialize([[maybe_unused]] const json& j) {};
 
 ResourceManager& ResourceManager::instance() {
     static ResourceManager instance;
@@ -36,16 +28,16 @@ std::unordered_set<std::string> ResourceManager::getResourceIds() {
     return result;
 }
 
-void ResourceManager::create(std::string id, detail::Resource *resource) {
+void ResourceManager::create(std::string id, Resource *resource) {
     std::println(stderr, "Creating resource: {}", id);
     std::lock_guard lock(mtx);
-    resources.insert_or_assign(id, newResource(resource));
+    resources.insert_or_assign(id, std::unique_ptr<Resource>(resource));
 }
 
-void ResourceManager::create(std::string id, std::unique_ptr<detail::Resource> &&resource) {
+void ResourceManager::create(std::string id, std::shared_ptr<Resource> &&resource) {
     std::println(stderr, "Creating resource: {}", id);
     std::lock_guard lock(mtx);
-    resources.insert_or_assign(id, newResource(std::move(resource)));
+    resources.insert_or_assign(id, std::move(resource));
 }
 
 void ResourceManager::destroy(std::string id) {
@@ -88,8 +80,7 @@ json ResourceManager::serialize() {
     json result = json::object();
 
     for (const auto& [id, res] : resources) {
-        auto locked = res->synchronize();
-        auto serialized = (*locked)->serialize();
+        auto serialized = res->serialize();
         if (serialized) { result[id] = *serialized; } // only serialize needed resources
     }
 
@@ -109,8 +100,7 @@ void ResourceManager::deserialize(const json& j) {
             continue;
         }
 
-        auto locked = it->second->synchronize();
-        (*locked)->deserialize(data);
+        it->second->deserialize(data);
     }
 }
 

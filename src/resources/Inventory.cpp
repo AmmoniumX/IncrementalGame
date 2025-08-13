@@ -3,7 +3,7 @@
 void Inventory::init() {
     static bool registered = false;
     if (!registered) {
-        ResourceManager::instance().create(RESOURCE_ID, std::unique_ptr<Inventory>(new Inventory));
+        ResourceManager::instance().create(RESOURCE_ID, std::shared_ptr<Inventory>(new Inventory));
         registered = true;
     }
 }

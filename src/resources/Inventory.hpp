@@ -8,7 +8,7 @@
 #include "../game.hpp"
 #include "../systems/ResourceManager.hpp"
 
-class Inventory : public detail::Resource {
+class Inventory : public Resource {
   private:
     std::map<std::string, BigNum> items;
     Inventory() = default;

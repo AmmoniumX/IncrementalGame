@@ -16,7 +16,7 @@ std::optional<const Recipes::Recipe> Recipes::get(std::string id) {
 void Recipes::init() {
     static bool registered = false;
     if (!registered) {
-        ResourceManager::instance().create(RESOURCE_ID, std::unique_ptr<Recipes>(new Recipes));
+        ResourceManager::instance().create(RESOURCE_ID, std::shared_ptr<Recipes>(new Recipes));
         registered = true;
     }
 }

@@ -8,14 +8,11 @@
 #include <memory>
 #include <mutex>
 
-#include <boost/thread/synchronized_value.hpp>
-
 #include "../json.hpp"
 #include "../SystemManager.hpp"
 
 using nlohmann::json;
 
-namespace detail{
 class Resource {
 public:
     virtual ~Resource() = default;
@@ -29,9 +26,6 @@ public:
 protected:
     Resource() = default;
 };
-} // namespace detail
-
-using Resource = boost::synchronized_value<std::unique_ptr<detail::Resource>>;
 
 class ResourceManager : public System {
 private:
@@ -40,9 +34,6 @@ private:
     std::unordered_map<std::string, std::shared_ptr<Resource>> resources;
     std::mutex mtx;
 
-    std::shared_ptr<Resource> newResource(std::unique_ptr<detail::Resource> &&r);
-
-    std::shared_ptr<Resource> newResource(detail::Resource *r);
 public:
 
     static void init();
@@ -51,9 +42,9 @@ public:
 
     std::unordered_set<std::string> getResourceIds();
 
-    void create(std::string id, detail::Resource *resource);
+    void create(std::string id, Resource *resource);
 
-    void create(std::string id, std::unique_ptr<detail::Resource> &&resource);
+    void create(std::string id, std::shared_ptr<Resource> &&resource);
 
     void destroy(std::string id);
 

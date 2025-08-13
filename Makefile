@@ -14,7 +14,7 @@ CXXFLAGS += -fno-trapping-math -DNO_TRAPPING_MATH
 EXTRA_INCLUDES ?=
 EXTRA_LDFLAGS ?=
 INCLUDES= -I/usr/include $(EXTRA_INCLUDES)
-LDFLAGS = -lncursesw -lboost_thread $(EXTRA_LDFLAGS)
+LDFLAGS = -lncursesw $(EXTRA_LDFLAGS)
 
 SRCS = $(shell find src -name '*.cpp')
 

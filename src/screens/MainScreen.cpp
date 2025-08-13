@@ -33,10 +33,8 @@ void MainScreen::switchWindow(Subwindows target) {
 
 
 void MainScreen::refreshInventoryCounts() {
-    auto syncedInv = inventory->synchronize();
-    Inventory *inv = static_cast<Inventory *>(syncedInv->get());
 
-    const std::map<std::string, BigNum> items = inv->getItems();
+    const std::map<std::string, BigNum> items = inventory->getItems();
 
     static size_t charsPerLine = COLS - 2;
     std::array<std::string, 3> display_lines({"", "", ""});
@@ -126,39 +124,37 @@ MainScreen::MainScreen() :
         {CRAFTING, WindowGroup(craftingWindow, sidebarCraftingWindow, GAME_COLORS::YELLOW_GRAY, GAME_COLORS::YELLOW_BLACK)},
         {UPGRADES, WindowGroup(upgradesWindow, sidebarUpgradesWindow, GAME_COLORS::RED_GRAY, GAME_COLORS::RED_BLACK)}
     }),
-    inventory(ResourceManager::instance().getResource(Inventory::RESOURCE_ID)),
-    recipes(ResourceManager::instance().getResource(Recipes::RESOURCE_ID))
+    inventory(std::static_pointer_cast<Inventory>(ResourceManager::instance().getResource(Inventory::RESOURCE_ID))),
+    recipes(std::static_pointer_cast<Recipes>(ResourceManager::instance().getResource(Recipes::RESOURCE_ID)))
 {
     (void)inventoryWindow.setTitle("Inventory", Window::Alignment::CENTER, GAME_COLORS::YELLOW_BLACK);
     (void)upgradesWindow.setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
     upgradeOptions.emplace("example_upgrade", upgradesWindow.putText(1, 1, "Example"s));
     (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
-    auto syncedRecipes = recipes->synchronize();
-    Recipes *rec = static_cast<Recipes*>(syncedRecipes->get());
     using Items = Inventory::Items;
     addCraftingOption<std::string>('1', {
                     {GAME_COLORS::WHITE_BLACK, "[1] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}
-                }, getOrThrow(rec->get(Items::IRON), "Invalid recipe"));
+                }, getOrThrow(recipes->get(Items::IRON), "Invalid recipe"));
     addCraftingOption<std::string>('2', {
                 {GAME_COLORS::WHITE_BLACK, "[2] "s},
                 {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}
-            }, getOrThrow(rec->get(Items::COPPER), "Invalid recipe"));
+            }, getOrThrow(recipes->get(Items::COPPER), "Invalid recipe"));
     addCraftingOption<std::string>('3', {
                 {GAME_COLORS::WHITE_BLACK, "[3] "s},
                 {GAME_COLORS::YELLOW_BLACK, "Iron Gear 1x "s},
                 {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}
-            }, getOrThrow(rec->get(Items::IRON_GEAR), "Invalid recipe"));
+            }, getOrThrow(recipes->get(Items::IRON_GEAR), "Invalid recipe"));
     addCraftingOption<std::string>('4', {
                     {GAME_COLORS::WHITE_BLACK, "[4] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Copper Wire 3x "s},
                     {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}
-                }, getOrThrow(rec->get(Items::COPPER_WIRE), "Invalid recipe"));
+                }, getOrThrow(recipes->get(Items::COPPER_WIRE), "Invalid recipe"));
     addCraftingOption<std::string>('5', {
                     {GAME_COLORS::WHITE_BLACK, "[5] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Motor 1x "s},
                     {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"s}
-                }, getOrThrow(rec->get(Items::MOTOR), "Invalid recipe"));
+                }, getOrThrow(recipes->get(Items::MOTOR), "Invalid recipe"));
     (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s, GAME_COLORS::DEFAULT);
     (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s, GAME_COLORS::DEFAULT);
 }
@@ -180,8 +176,6 @@ void MainScreen::onTick() {
 
     // Handle input
     char input = ScreenManager::instance().getInput();
-    auto syncedInv = inventory->synchronize();
-    Inventory *inv = static_cast<Inventory *>(syncedInv->get());
     // Process global screen inputs
     switch (input) {
     case 'q':
@@ -201,7 +195,7 @@ void MainScreen::onTick() {
     }
     // Process registered input listeners
     if (auto i = inputListeners.find(input); i != inputListeners.end()) {
-        i->second(this, inv);
+        i->second(this, inventory.get());
         return;
     }
 

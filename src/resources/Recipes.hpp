@@ -8,7 +8,7 @@
 #include "../systems/ResourceManager.hpp"
 #include "./Inventory.hpp"
 
-class Recipes : public detail::Resource {
+class Recipes : public Resource {
     private:
     Recipes() = default;
 

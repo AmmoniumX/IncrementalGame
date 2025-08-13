@@ -49,8 +49,8 @@ class MainScreen : public Screen {
     
     std::unordered_map<Subwindows, WindowGroup> windows;
 
-    std::shared_ptr<Resource> inventory;
-    std::shared_ptr<Resource> recipes;
+    std::shared_ptr<Inventory> inventory;
+    std::shared_ptr<Recipes> recipes;
 
     Subwindows activeWindow = CRAFTING;
 
