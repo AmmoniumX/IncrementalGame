@@ -45,7 +45,6 @@ void ScreenManager::onTick() {
     if (!currentScreen) throw std::runtime_error("ScreenManager is not initialized!");
 
     // Run a single frame
-    time_t start = time(nullptr);
     if (screenChange && nextScreen) {
         currentScreen = nextScreen;
         nextScreen = nullptr;
@@ -53,17 +52,6 @@ void ScreenManager::onTick() {
     }
     currentScreen->onTick();
     currentScreen->render();
-    time_t end = time(nullptr);
-
-    // Calculate time to sleep
-    double delta = difftime(end, start);
-    double sleep_time = 1.0 / FRAME_RATE - delta;
-    if (sleep_time > 0) {
-        timespec ts;
-        ts.tv_sec = 0;
-        ts.tv_nsec = sleep_time * 1e9;
-        nanosleep(&ts, nullptr);
-    }
 }
 
 ScreenManager::~ScreenManager() {
