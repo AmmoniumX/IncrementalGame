@@ -1,10 +1,20 @@
-#if _WIN32
-#include "./wcwidth.h"
-#else
+#include <type_traits>
 #include <wchar.h>
+#include <uchar.h>
+
+#if _WIN32
+// Include our own implementation of wcswidth since mingw64 doesn't include one
+// https://www.gnu.org/software/gnulib/manual/html_node/wcswidth.html
+#include "./wcwidth.hpp"
 #endif
 
 #include "Text.hpp"
+
+#if _WIN32
+static_assert(sizeof(wchar_t) == 2, "Windows system wchar size is not 16-bit");
+#else
+static_assert(sizeof(wchar_t) == 4, "Unix system wchar size is not 32-bit");
+#endif
 
 void Text::doClear() {
     if (needsClear <= 0) { return; }
@@ -28,7 +38,7 @@ size_t Text::getVisualLengthOf(TextChunk<std::string> chunk) {
 size_t Text::getVisualLengthOf(TextChunk<std::wstring> chunk) {
     return static_cast<size_t>(
         #ifdef _WIN32
-        mk_wcswidth(chunk.text.c_str(), chunk.text.size())
+        mk_w16cswidth(reinterpret_cast<const char16_t*>(chunk.text.c_str()), chunk.text.size())
         #else
         wcswidth(chunk.text.c_str(), chunk.text.size())
         #endif

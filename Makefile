@@ -13,14 +13,17 @@ CXXFLAGS += -fno-trapping-math -DNO_TRAPPING_MATH
 # Libraries
 EXTRA_INCLUDES ?=
 EXTRA_LDFLAGS ?=
-INCLUDES= -I/usr/include $(EXTRA_INCLUDES)
 
+INCLUDES = 
 ifeq ($(shell uname -o),Msys)
+    # INCLUDES = -I/mingw64/include
     CXXFLAGS += -DPDCURSES_WCS -DPDC_WIDE -lstdc++exp
     LDFLAGS = -static -l:wincon/pdcurses.a
 else
+    # INCLUDES = -I/usr/include
     LDFLAGS = -lncursesw
 endif
+INCLUDES += $(EXTRA_INCLUDES)
 LDFLAGS += $(EXTRA_LDFLAGS)
 
 SRCS = $(shell find src -name '*.cpp')
