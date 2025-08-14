@@ -1,10 +1,16 @@
 #pragma once
 
 #include <functional>
-#include <ncursesw/ncurses.h>
+// #include <ncursesw/ncurses.h>
 #include <print>
 #include <list>
 #include <string_view>
+
+#ifdef _WIN32
+    #include <curses.h> // from PDCurses
+#else
+    #include <ncurses.h>
+#endif
 
 #include "../SystemManager.hpp"
 #include "../render/Screen.hpp"

@@ -1,6 +1,13 @@
 #pragma once
 
-#include <ncursesw/ncurses.h>
+// #include <ncursesw/ncurses.h>
+
+#ifdef _WIN32
+    #include <curses.h> // from PDCurses
+#else
+    #include <ncurses.h>
+#endif
+
 #include <string>
 #include <print>
 #include <vector>

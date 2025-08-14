@@ -1,5 +1,10 @@
-#include "Text.hpp"
+#if _WIN32
+#include "./wcwidth.h"
+#else
+#include <wchar.h>
+#endif
 
+#include "Text.hpp"
 
 void Text::doClear() {
     if (needsClear <= 0) { return; }
@@ -22,7 +27,11 @@ size_t Text::getVisualLengthOf(TextChunk<std::string> chunk) {
 
 size_t Text::getVisualLengthOf(TextChunk<std::wstring> chunk) {
     return static_cast<size_t>(
+        #ifdef _WIN32
+        mk_wcswidth(chunk.text.c_str(), chunk.text.size())
+        #else
         wcswidth(chunk.text.c_str(), chunk.text.size())
+        #endif
     );
 }
 

@@ -4,7 +4,12 @@
 #include <string>
 #include <print>
 
-#include <ncursesw/ncurses.h>
+#ifdef _WIN32
+    #include <curses.h> // from PDCurses
+#else
+    #include <ncurses.h>
+#endif
+// #include <ncursesw/ncurses.h>
 
 #include "BigNum.hpp"
 #include "json.hpp"

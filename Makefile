@@ -14,7 +14,14 @@ CXXFLAGS += -fno-trapping-math -DNO_TRAPPING_MATH
 EXTRA_INCLUDES ?=
 EXTRA_LDFLAGS ?=
 INCLUDES= -I/usr/include $(EXTRA_INCLUDES)
-LDFLAGS = -lncursesw $(EXTRA_LDFLAGS)
+
+ifeq ($(shell uname -o),Msys)
+    CXXFLAGS += -DPDCURSES_WCS -DPDC_WIDE -lstdc++exp
+    LDFLAGS = -static -l:wincon/pdcurses.a
+else
+    LDFLAGS = -lncursesw
+endif
+LDFLAGS += $(EXTRA_LDFLAGS)
 
 SRCS = $(shell find src -name '*.cpp')
 
@@ -25,26 +32,46 @@ ifeq ($(BUILD_TYPE),release)
     # --- Release Build ---
     BIN_DIR = bin/release
     OBJ_DIR = obj/release
-    TARGET = $(BIN_DIR)/game
-	OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+    ifeq ($(shell uname -o),Msys)
+      TARGET = $(BIN_DIR)/game.exe
+    else
+      TARGET = $(BIN_DIR)/game
+    endif
+    OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
     CXXFLAGS += -O3
 
 else ifeq ($(BUILD_TYPE),debug)
     # --- Debug Build ---
     BIN_DIR = bin/debug
     OBJ_DIR = obj/debug
-    TARGET = $(BIN_DIR)/game
-	OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
-    CXXFLAGS += -g -O0 -fsanitize=address,undefined
+    ifeq ($(shell uname -o),Msys)
+      TARGET = $(BIN_DIR)/game.exe
+      CXXFLAGS += -g -O0
+    else
+      TARGET = $(BIN_DIR)/game
+      CXXFLAGS += -g -O0 -fsanitize=address,undefined
+    endif
+    OBJS = $(patsubst src/%.cpp,$(OBJ_DIR)/%.o,$(SRCS))
+endif
+
+ifeq ($(shell uname -o),Msys)
+    OBJS += $(OBJ_DIR)/render/wcwidth.o
 endif
 
 $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
 
+$(OBJ_DIR)/%.o: src/%.c src/%.h
+	@mkdir -p $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
+
 $(OBJ_DIR)/%.o: src/%.cpp src/%.hpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
+
+printobjs:
+	echo $(OBJS)
 
 # --- Phony Targets ---
 all: debug release
@@ -57,4 +84,4 @@ debug:
 release:
 	$(MAKE) BUILD_TYPE=release
 
-.PHONY: all clean debug release
+.PHONY: all clean debug release printobjs

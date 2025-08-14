@@ -42,6 +42,8 @@ the types of games that would use this library
 #define CONSTEXPR_NEXTAFTER_FALLBACK
 #endif
 
+using uint = unsigned int;
+
 // Define a macro for CPP26 and later for constexpr statements
 #define CPP26 (__cplusplus >= 202600L)
 

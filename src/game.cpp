@@ -2,7 +2,14 @@
 #include <ctime>
 #include <getopt.h>
 #include <iostream>
-#include <ncursesw/ncurses.h>
+// #include <ncursesw/ncurses.h>
+
+#ifdef _WIN32
+    #include <curses.h> // from PDCurses
+#else
+    #include <ncurses.h>
+#endif
+
 #include <print>
 #include <thread>
 #include <string>

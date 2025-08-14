@@ -6,7 +6,14 @@
 #include <string>
 #include <variant>
 #include <vector>
-#include <ncursesw/ncurses.h>
+
+#ifdef _WIN32
+    #include <curses.h> // from PDCurses
+#else
+    #include <ncurses.h>
+#endif
+
+// #include <ncursesw/ncurses.h>
 #include <cwchar>
 #include <print>
 #include <ranges>
