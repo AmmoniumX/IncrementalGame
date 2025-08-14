@@ -16,11 +16,9 @@ EXTRA_LDFLAGS ?=
 
 INCLUDES = 
 ifeq ($(shell uname -o),Msys)
-    # INCLUDES = -I/mingw64/include
     CXXFLAGS += -DPDCURSES_WCS -DPDC_WIDE -lstdc++exp
     LDFLAGS = -static -l:wincon/pdcurses.a
 else
-    # INCLUDES = -I/usr/include
     LDFLAGS = -lncursesw
 endif
 INCLUDES += $(EXTRA_INCLUDES)
@@ -73,9 +71,6 @@ $(OBJ_DIR)/%.o: src/%.cpp src/%.hpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
-printobjs:
-	echo $(OBJS)
-
 # --- Phony Targets ---
 all: debug release
 clean:
@@ -87,4 +82,4 @@ debug:
 release:
 	$(MAKE) BUILD_TYPE=release
 
-.PHONY: all clean debug release printobjs
+.PHONY: all clean debug release
