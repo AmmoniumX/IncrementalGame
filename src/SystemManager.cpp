@@ -1,4 +1,6 @@
 #include <ctime>
+#include <chrono>
+#include <thread>
 
 #include "Logger.hpp"
 #include "game.hpp"
@@ -36,19 +38,18 @@ void SystemManager::registerSystem(System *system) {
 }
 
 void SystemManager::onTick() {
-    time_t start = time(nullptr);
+    auto start = std::chrono::high_resolution_clock::now();
     for (const auto &system: systems) {
         system->onTick();
     }
-    time_t end = time(nullptr);
+    auto end = std::chrono::high_resolution_clock::now();
 
     // Calculate time to sleep
-    double delta = difftime(end, start);
-    double sleep_time = 1.0 / FRAME_RATE - delta;
-    if (sleep_time > 0) {
-        timespec ts;
-        ts.tv_sec = 0;
-        ts.tv_nsec = sleep_time * 1e9;
-        nanosleep(&ts, nullptr);
+    std::chrono::duration<double> delta = end - start;
+    std::chrono::duration<double> target_duration(1.0 / FRAME_RATE);
+    std::chrono::duration<double> sleep_time = target_duration - delta;
+
+    if (sleep_time.count() > 0) {
+        std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(sleep_time));
     }
 }

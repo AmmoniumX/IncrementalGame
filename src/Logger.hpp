@@ -16,11 +16,22 @@ public:
 
     template <class... Args>
     static void print(std::format_string<Args...> fmt, Args&&... args) {
+        #ifdef _MSC_VER
+        std::string message = std::vformat(fmt.get(), std::make_format_args(args...));
+        out() << message;
+        #else
         return std::print(out(), fmt, std::forward<Args>(args)...);
+        #endif
     }
 
     template <class... Args>
     static void println(std::format_string<Args...> fmt, Args&&... args) {
+        #ifdef _MSC_VER
+        std::string message = std::vformat(fmt.get(), std::make_format_args(args...));
+        out() << message << '\n';
+        #else
         return std::println(out(), fmt, std::forward<Args>(args)...);
+        #endif
+
     }
 };

@@ -1,7 +1,10 @@
 #include <atomic>
 #include <ctime>
 #include <cstdlib>
+#if _WIN32
+#else
 #include <getopt.h>
+#endif
 #include <iostream>
 #include <print>
 #include <string>
@@ -178,10 +181,17 @@ void ensure_directory(fs::path directory) {
     }
 }
 
+#ifdef _MSC_VER
+int main() {
+#else
 int main(int argc, char *argv[]) {
+#endif
     string savefile = "save.json";
 
     // Parse arguments
+    #ifdef _MSC_VER
+    
+    #else
     int opt;
     static struct option long_options[] = {{"save", required_argument, 0, 0},
                                            {0, 0, 0, 0}};
@@ -195,6 +205,7 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }
     }
+    #endif
 
     fs::path logdir("./logs/");
     ensure_directory(logdir);
