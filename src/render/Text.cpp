@@ -1,3 +1,5 @@
+#include <ranges>
+#include <string>
 #include <type_traits>
 #include <wchar.h>
 #include <uchar.h>
@@ -36,9 +38,13 @@ size_t Text::getVisualLengthOf(TextChunk<std::string> chunk) {
 }
 
 size_t Text::getVisualLengthOf(TextChunk<std::wstring> chunk) {
+    #ifdef _WIN32
+    std::u16string s16(std::from_range, chunk.text);
+    #endif
+
     return static_cast<size_t>(
         #ifdef _WIN32
-        mk_w16cswidth(reinterpret_cast<const char16_t*>(chunk.text.c_str()), chunk.text.size())
+        mk_w16cswidth(s16.c_str(), s16.size())
         #else
         wcswidth(chunk.text.c_str(), chunk.text.size())
         #endif
