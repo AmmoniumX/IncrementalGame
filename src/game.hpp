@@ -36,6 +36,6 @@ namespace Game {
 
 
 // Constants
-static inline const uint FRAME_RATE = 30;
+static inline const unsigned int FRAME_RATE = 30;
 static inline const int GAME_TICK_SPEED = 30;
 
