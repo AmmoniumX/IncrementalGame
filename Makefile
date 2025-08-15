@@ -72,7 +72,7 @@ $(OBJ_DIR)/%.o: src/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
 # --- Phony Targets ---
-all: debug release
+all: release
 clean:
 	rm -rf ./obj/* ./bin/*
 
