@@ -1,3 +1,5 @@
+#include "../Logger.hpp"
+#include "../game.hpp"
 #include "Window.hpp"
 
 void Window::WindowDeleter::operator()(WINDOW* win) const {
@@ -103,7 +105,7 @@ void Window::toggle() { visible ? disable() : enable(); }
 
 void Window::render() {
     if (!win) {
-        std::println(stderr, "Window is not initialized!");
+        Logger::println("Window is not initialized!");
         return;
     }
     if (!visible) return;

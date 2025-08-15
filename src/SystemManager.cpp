@@ -1,13 +1,13 @@
 #include <ctime>
 
+#include "Logger.hpp"
+#include "game.hpp"
 #include "SystemManager.hpp"
 #include "./systems/ResourceManager.hpp"
 #include "./systems/ScreenManager.hpp"
 
-#include "game.hpp"
-
 void SystemManager::init() {
-    std::println(stderr, "Registering systems...");
+    Logger::println("Registering systems...");
 
     ResourceManager::init();
     SystemManager::instance().registerSystem(&ResourceManager::instance());
@@ -22,7 +22,7 @@ void System::onInit() {};
 void System::onTick() {};
 
 void System::requestExit() {
-    GameInternals::exit = true;
+    Game::exit = true;
 }
 
 SystemManager &SystemManager::instance() {

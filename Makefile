@@ -63,11 +63,11 @@ $(TARGET): $(OBJS)
 	@mkdir -p $(BIN_DIR)
 	$(CXX) -o $@ $^ $(LDFLAGS) $(CXXFLAGS)
 
-$(OBJ_DIR)/%.o: src/%.c src/%.h
+$(OBJ_DIR)/%.o: src/%.c
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 
-$(OBJ_DIR)/%.o: src/%.cpp src/%.hpp
+$(OBJ_DIR)/%.o: src/%.cpp
 	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c -o $@ $<
 

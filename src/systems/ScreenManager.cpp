@@ -1,8 +1,9 @@
+#include "../Logger.hpp"
 #include "ScreenManager.hpp"
 #include "../screens/MainScreen.hpp"
 
 void ScreenManager::init() {
-    std::println(stderr, "Registering screens...");
+    Logger::println("Registering screens...");
     // Create and setup ScreenManager and Screen
     ScreenManager &instance = ScreenManager::instance();
     std::unique_ptr<Screen> mainScreen = MainScreen::create();

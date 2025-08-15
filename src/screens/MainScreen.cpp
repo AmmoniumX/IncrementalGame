@@ -1,3 +1,5 @@
+#include "../Logger.hpp"
+#include "../game.hpp"
 #include "../systems/ScreenManager.hpp"
 
 #include "MainScreen.hpp"
@@ -50,8 +52,7 @@ void MainScreen::refreshInventoryCounts() {
             if (currLine < 3) {
                 display_lines[currLine] += entry + " ";
             } else {
-                std::println(
-                    stderr,
+                Logger::println(
                     "Inventory overflow, cannot display all items.");
                 break;
             }
@@ -61,8 +62,7 @@ void MainScreen::refreshInventoryCounts() {
             if (currLine < 3) {
                 display_lines[currLine] = entry + " ";
             } else {
-                std::println(
-                    stderr,
+                Logger::println(
                     "Inventory overflow, cannot display all items.");
                 break;
             }

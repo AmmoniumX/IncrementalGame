@@ -3,6 +3,8 @@
 #include <atomic>
 #include <string>
 #include <print>
+#include <format>
+#include <fstream>
 
 #ifdef _WIN32
     #include <curses.h> // from PDCurses
@@ -28,9 +30,10 @@ enum GAME_COLORS {
     RED_GRAY = 6
 };
 
-namespace GameInternals {
+namespace Game {
     extern std::atomic_bool exit;
-} // namespace GameInternals
+} // namespace Game
+
 
 // Constants
 static inline const uint FRAME_RATE = 30;

@@ -1,9 +1,11 @@
+#include "../Logger.hpp"
+#include "../game.hpp"
 #include "ResourceManager.hpp"
 #include "../resources/Inventory.hpp"
 #include "../resources/Recipes.hpp"
 
 void ResourceManager::init() {
-    std::println(stderr, "Registering resources...");
+    Logger::println("Registering resources...");
     Inventory::init();
     Recipes::init();
 }
@@ -28,20 +30,20 @@ std::unordered_set<std::string> ResourceManager::getResourceIds() {
 }
 
 void ResourceManager::create(std::string id, Resource *resource) {
-    std::println(stderr, "Creating resource: {}", id);
+    Logger::println("Creating resource: {}", id);
     resources.insert_or_assign(id, std::unique_ptr<Resource>(resource));
 }
 
 void ResourceManager::create(std::string id, std::shared_ptr<Resource> &&resource) {
-    std::println(stderr, "Creating resource: {}", id);
+    Logger::println("Creating resource: {}", id);
     resources.insert_or_assign(id, std::move(resource));
 }
 
 void ResourceManager::destroy(std::string id) {
-    std::println(stderr, "Destroying resource: {}", id);
+    Logger::println("Destroying resource: {}", id);
     auto res = resources.erase(id);
     if (res == 0) {
-        std::println(stderr, "WARN: unable to delete resource {}", id);
+        Logger::println("WARN: unable to delete resource {}", id);
     }
 }
 
@@ -87,7 +89,7 @@ void ResourceManager::deserialize(const json& j) {
     for (const auto& [id, data] : res_json.items()) {
         auto it = resources.find(id);
         if (it == resources.end()) {
-            std::println(stderr, "Resource with ID {} not found in registry, Skipping", id);
+            Logger::println("Resource with ID {} not found in registry, Skipping", id);
             continue;
         }
 

@@ -1,27 +1,34 @@
 #include <atomic>
 #include <ctime>
+#include <cstdlib>
 #include <getopt.h>
 #include <iostream>
-// #include <ncursesw/ncurses.h>
+#include <print>
+#include <string>
+#include <thread>
+#include <fstream>
+#include <filesystem>
 
 #ifdef _WIN32
     #include <curses.h> // from PDCurses
 #else
-    #include <ncurses.h>
+    #include <ncursesw/ncurses.h>
 #endif
 
-#include <print>
-#include <thread>
-#include <string>
-#include <fstream>
-
 #include "game.hpp"
+#include "Logger.hpp"
 #include "./SystemManager.hpp"
 #include "./systems/ResourceManager.hpp"
 
+namespace fs = std::filesystem;
+
 // Constants
-std::atomic_bool GameInternals::exit = false;
+std::atomic_bool Game::exit = false;
 using nlohmann::json;
+namespace {
+    std::ofstream logstream("./logs/latest.log");
+}
+std::ofstream &Logger::out() { return logstream; }
 
 // Ncurses setup
 void setupNcurses() {
@@ -35,7 +42,7 @@ void setupNcurses() {
     }
 
     if (!has_colors() || COLORS < 256) {
-        std::println(stderr,
+        Logger::println(
                      "This terminal does not support 256-bit colors! ({})",
                      COLORS);
         endwin();
@@ -49,8 +56,8 @@ void setupNcurses() {
     curs_set(0);           // Hide the cursor
 
     // Show supported colors
-    std::println(stderr, "Supported colors: {}", COLORS);
-    std::println(stderr, "Supported color pairs: {}", COLOR_PAIRS);
+    Logger::println("Supported colors: {}", COLORS);
+    Logger::println("Supported color pairs: {}", COLOR_PAIRS);
 
     // Initialize color pairs
     init_pair(GAME_COLORS::DEFAULT, COLOR_WHITE,
@@ -79,29 +86,28 @@ json to_json() { return ResourceManager::instance().serialize(); }
 void from_json(const json &j) { ResourceManager::instance().deserialize(j); }
 
 // Save game data
-void save(const string &filename) {
-    std::println(stderr, "Saving game data to {}", filename);
+void save(const fs::path &savepath) {
+    Logger::println("Saving game data to {}", savepath.string());
 
     // Convert to json
     json j = to_json();
-    std::ofstream o(filename);
+    std::ofstream o(savepath);
     if (!o.is_open()) {
-        std::println(stderr, "Error: Could not open file {}", filename);
+        Logger::println("Error: Could not open file {}", savepath.string());
         return;
     }
     o << j.dump(0) << std::endl;
 
-    // std::println(stderr, "Game data saved!");
 }
 
 // Load game data
-void load(const string &filename) {
-    std::println(stderr, "Loading game data from {}", filename);
+void load(const fs::path &savepath) {
+    Logger::println("Loading game data from {}", savepath.string());
 
     // Load json from file
-    std::ifstream file(filename);
+    std::ifstream file(savepath);
     if (!file.is_open()) {
-        std::println(stderr,
+        Logger::println(
                      "File not found, ResourceManager will be empty!");
         return;
     }
@@ -110,14 +116,13 @@ void load(const string &filename) {
     try {
         file >> j;
     } catch (const std::exception &e) {
-        std::println(stderr,
+        Logger::println(
                      "Error: Could not parse json! Is data corrupted? {}",
                      e.what());
-        throw std::runtime_error("Could not parse json");
+        std::exit(EXIT_FAILURE);
     }
     from_json(j);
 
-    // std::println(stderr, "Game data loaded!");
     return;
 }
 void gameTick() {
@@ -125,7 +130,7 @@ void gameTick() {
 }
 
 void run() {
-    std::println(stderr, "Running game...");
+    Logger::println("Running game...");
     // Main game loop
     do {
         auto start = time(nullptr);
@@ -137,30 +142,44 @@ void run() {
             std::this_thread::sleep_for(
                 std::chrono::milliseconds(static_cast<int>(sleep_time * 1000)));
         }
-    } while (!GameInternals::exit);
-    std::println(stderr, "Exiting...");
+    } while (!Game::exit);
+    Logger::println("Exiting...");
 }
 
-void init(std::string savefile) {
+void init(fs::path savepath) {
     
     // Initialize ncurses
-    std::println(stderr, "Initializing ncurses...");
+    Logger::println("Initializing ncurses...");
     setupNcurses();    
 
     // Initialize systems
     SystemManager::init();
 
     // Load game data
-    load(savefile);
+    load(savepath);
 }
 
-void cleanup(std::string savefile) {
+void cleanup(fs::path savepath) {
     // Save game data
-    save(savefile);
+    save(savepath);
+}
+
+void ensure_directory(fs::path directory) {
+    if (fs::exists(directory) && !fs::is_directory(directory)) {
+        Logger::println("Directory path exists but isn't a directory: ", directory.string());
+        std::exit(EXIT_FAILURE);
+    } else if (!fs::exists(directory)) {
+        try {
+            (void) fs::create_directory(directory);
+        } catch (fs::filesystem_error &ex) {
+            Logger::println("Error creating directory {}: {}", directory.string(), ex.what());
+            std::exit(EXIT_FAILURE);
+        }
+    }
 }
 
 int main(int argc, char *argv[]) {
-    string savefile = "saves/save.json";
+    string savefile = "save.json";
 
     // Parse arguments
     int opt;
@@ -173,14 +192,20 @@ int main(int argc, char *argv[]) {
             savefile = optarg;
         } else {
             std::println("Usage: {} [--save savefile]", argv[0]);
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
-    // Setup
-    init(savefile);
-    run();
-    cleanup(savefile);
+    fs::path logdir("./logs/");
+    ensure_directory(logdir);
+    fs::path savedir("./saves/");
+    ensure_directory(savedir);
+    fs::path savepath = savedir / savefile;
 
-    return 0;
+    // Setup
+    init(savepath);
+    run();
+    cleanup(savepath);
+
+    return EXIT_SUCCESS;
 }
