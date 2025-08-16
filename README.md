@@ -12,3 +12,33 @@ A cli-based incremental game
 ## Terminal Requirements
 - 256-bit colors
 - UTF-8 wchar support
+
+# Building
+
+## On Linux
+Run the following commands
+```
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build . --config Release
+```
+
+## On Windows (MSVC)
+1. Install Visual Studio 2022 and C++ components, then open Deverloper Powershell for VS 2022
+
+2. Build PDCurses with widechar enabled:
+```
+Invoke-WebRequest https://github.com/wmcbrine/PDCurses/archive/refs/tags/3.9.zip -OutFile .\PDCurses-3.9.zip
+Expand-Archive .\PDCurses-3.9.zip .
+cd .\PDCurses-3.9\wincon
+nmake.exe -f .\Makefile.vc WIDE=Y
+```
+
+3. Build this project: 
+```
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="C:/Users/user/src/PDCurses-3.9;C:/Users/user/src/PDCurses-3.9/wincon"
+cmake --build . --config Release
+```
+
+(Note: Replace both paths of CMAKE_PREFIX_PATH with the location of the extracted PDCurses-3.9/ and PDCurses-3.9/wincon/)
+
