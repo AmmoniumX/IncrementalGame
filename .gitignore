@@ -43,3 +43,4 @@ saves/
 logs/
 .cache/
 compile_commands.json
+build/
