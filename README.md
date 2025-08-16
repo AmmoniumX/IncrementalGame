@@ -36,6 +36,8 @@ nmake.exe -f .\Makefile.vc WIDE=Y
 
 3. Build this project: 
 ```
+New-Item -Type Directory .\build
+cd .\build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="C:/Users/user/src/PDCurses-3.9;C:/Users/user/src/PDCurses-3.9/wincon"
 cmake --build . --config Release
 ```
