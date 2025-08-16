@@ -1,0 +1,86 @@
+# Makefile.vc
+# For use with Visual Studio's `nmake` and `cl` compiler
+
+!IF "$(BUILD_TYPE)" == ""
+BUILD_TYPE = release
+!ENDIF
+
+CXX = cl
+CXXFLAGS = /W4 /EHsc /std:c++latest /DPDCURSES_WCS /DPDC_WIDE
+
+LIB_PATH = 
+LIB_NAME = pdcurses.lib user32.lib gdi32.lib advapi32.lib
+LDFLAGS = /LIBPATH:$(LIB_PATH) $(LIB_NAME)
+
+!IF "$(EXTRA_INCLUDES)" == ""
+EXTRA_INCLUDES =
+!ENDIF
+!IF "$(EXTRA_LDFLAGS)" == ""
+EXTRA_LDFLAGS =
+!ENDIF
+
+INCLUDES = $(EXTRA_INCLUDES)
+LDFLAGS = $(LDFLAGS) $(EXTRA_LDFLAGS)
+
+SRCS = src\game.cpp src\SystemManager.cpp src\render\Screen.cpp src\render\Text.cpp src\render\Window.cpp src\render\wcwidth.cpp src\resources\Inventory.cpp src\resources\Recipes.cpp src\screens\MainScreen.cpp src\systems\ResourceManager.cpp src\systems\ScreenManager.cpp
+
+!IF "$(BUILD_TYPE)" == "release"
+BIN_DIR = bin\release
+OBJ_DIR = obj\release
+TARGET = $(BIN_DIR)\game.exe
+CXXFLAGS = $(CXXFLAGS) /O2
+!ELSEIF "$(BUILD_TYPE)" == "debug"
+BIN_DIR = bin\debug
+OBJ_DIR = obj\debug
+TARGET = $(BIN_DIR)\game.exe
+CXXFLAGS = $(CXXFLAGS) /Od /Zi
+!ENDIF
+
+OBJS = $(OBJ_DIR)\game.obj $(OBJ_DIR)\SystemManager.obj $(OBJ_DIR)\render\Screen.obj $(OBJ_DIR)\render\Text.obj $(OBJ_DIR)\render\Window.obj $(OBJ_DIR)\render\wcwidth.obj $(OBJ_DIR)\resources\Inventory.obj $(OBJ_DIR)\resources\Recipes.obj $(OBJ_DIR)\screens\MainScreen.obj $(OBJ_DIR)\systems\ResourceManager.obj $(OBJ_DIR)\systems\ScreenManager.obj
+
+# Main target to link the executable
+$(TARGET): $(OBJS)
+	@if not exist $(BIN_DIR) mkdir $(BIN_DIR)
+	link /OUT:$@ $** $(LDFLAGS)
+
+# Inferencing Rules
+
+{src\}.cpp{$(OBJ_DIR)\}.obj:
+	@if not exist $(@D) mkdir $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) /c /Fo$@ $<
+
+{src\render\}.cpp{$(OBJ_DIR)\render\}.obj:
+	@if not exist $(@D) mkdir $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) /c /Fo$@ $<
+
+{src\resources\}.cpp{$(OBJ_DIR)\resources\}.obj:
+	@if not exist $(@D) mkdir $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) /c /Fo$@ $<
+
+{src\screens\}.cpp{$(OBJ_DIR)\screens\}.obj:
+	@if not exist $(@D) mkdir $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) /c /Fo$@ $<
+
+{src\systems\}.cpp{$(OBJ_DIR)\systems\}.obj:
+	@if not exist $(@D) mkdir $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) /c /Fo$@ $<
+
+# The C compilation rule
+{src\}.c{$(OBJ_DIR)\}.obj:
+	@if not exist $(@D) mkdir $(@D)
+	$(CXX) $(CXXFLAGS) $(INCLUDES) /c /Fo$@ $<
+
+# --- Phony Targets ---
+.PHONY: all clean debug release
+
+all: release
+
+clean:
+	@if exist obj rmdir /s /q obj
+	@if exist bin rmdir /s /q bin
+
+debug:
+	@$(MAKE) BUILD_TYPE=debug
+
+release:
+	@$(MAKE) BUILD_TYPE=release

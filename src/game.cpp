@@ -1,7 +1,9 @@
 #include <atomic>
 #include <ctime>
 #include <cstdlib>
+#ifndef _WIN32
 #include <getopt.h>
+#endif
 #include <iostream>
 #include <print>
 #include <string>
@@ -182,16 +184,44 @@ int main(int argc, char *argv[]) {
     string savefile = "save.json";
 
     // Parse arguments
-    int opt;
-    static struct option long_options[] = {{"save", required_argument, 0, 0},
-                                           {0, 0, 0, 0}};
-    int option_index = 0;
-    while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) !=
-           -1) {
-        if (opt == 0 && strcmp(long_options[option_index].name, "save") == 0) {
-            savefile = optarg;
+    // int opt;
+    // static struct option long_options[] = {{"save", required_argument, 0, 0},
+    //                                        {0, 0, 0, 0}};
+    // int option_index = 0;
+    // while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) !=
+    //        -1) {
+    //     if (opt == 0 && strcmp(long_options[option_index].name, "save") == 0) {
+    //         savefile = optarg;
+    //     } else {
+    //         std::println("Usage: {} [--save savefile]", argv[0]);
+    //         return EXIT_FAILURE;
+    //     }
+    // }
+    
+    // Loop through the command-line arguments starting from the first
+    // user-provided argument (at index 1), since argv[0] is the program name.
+    for (int i = 1; i < argc; ++i) {
+        // Convert the current C-style char* argument to a C++ std::string
+        // for easier comparison.
+        std::string arg = argv[i];
+
+        // Check if the current argument is the "--save" flag.
+        if (arg == "--save") {
+            // Check if there is a next argument to use as the value.
+            if (i + 1 < argc) {
+                // The next argument is the path to the save file.
+                savefile = argv[i + 1];
+                i++; // Skip the next argument as it's the value for "--save".
+            } else {
+                // If "--save" is the last argument, there's a missing value.
+                std::cerr << "Error: --save option requires an argument." << std::endl;
+                std::cerr << "Usage: " << argv[0] << " [--save <savefile>]" << std::endl;
+                return EXIT_FAILURE;
+            }
         } else {
-            std::println("Usage: {} [--save savefile]", argv[0]);
+            // If the argument is not "--save", it's an unrecognized option.
+            std::cerr << "Error: Unrecognized option '" << arg << "'" << std::endl;
+            std::cerr << "Usage: " << argv[0] << " [--save <savefile>]" << std::endl;
             return EXIT_FAILURE;
         }
     }
