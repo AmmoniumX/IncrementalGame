@@ -12,12 +12,6 @@
 
 #include "Text.hpp"
 
-#if _WIN32
-static_assert(sizeof(wchar_t) == 2, "Windows system wchar size is not 16-bit");
-#else
-static_assert(sizeof(wchar_t) == 4, "Unix system wchar size is not 32-bit");
-#endif
-
 void Text::doClear() {
     if (needsClear <= 0) { return; }
     std::string blank(needsClear, ' ');
@@ -38,13 +32,9 @@ size_t Text::getVisualLengthOf(TextChunk<std::string> chunk) {
 }
 
 size_t Text::getVisualLengthOf(TextChunk<std::wstring> chunk) {
-    #ifdef _WIN32
-    std::u16string s16(std::from_range, chunk.text);
-    #endif
-
     return static_cast<size_t>(
         #ifdef _WIN32
-        mk_w16cswidth(s16.c_str(), s16.size())
+        mk_wswidth(chunk.text)
         #else
         wcswidth(chunk.text.c_str(), chunk.text.size())
         #endif

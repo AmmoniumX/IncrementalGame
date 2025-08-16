@@ -1,6 +1,8 @@
 // Source: https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
-// Slightly modified to port to C++, use fixed size char32_t,
-// and a helper function that parses char16_t arrays
+// Slightly modified to port:
+// - Port to C++
+// - Use fixed-length char and string types
+// - Added a method for UTF-16 to UTF-32 conversion
 
 /*
  * This is an implementation of wcwidth() and wcswidth() (defined in
@@ -65,8 +67,8 @@
 
 #include <wchar.h>
 #include <uchar.h>
+#include <string>
 #include <stdint.h>
-#include <vector>
 
 struct interval {
   char32_t first;
@@ -315,42 +317,34 @@ int mk_wcswidth_cjk(const char32_t *pwcs, size_t n)
   return width;
 }
 
-/**
- * @brief Calculates the display width of a UTF-16 character string,
- * correctly handling UTF-16 surrogate pairs.
- * * This function iterates through a UTF-16 string, reconstructs any
- * surrogate pairs into single UTF-32 code points, and then calls
- * mk_wcswidth to calculate the total width of the reconstructed string.
- *
- * @param pwcs A pointer to the null-terminated UTF-16 character array.
- * @param n The number of char16_t units to process.
- * @return The display width of the string, or -1 if an invalid character is found.
- */
-int mk_w16cswidth(const char16_t *pwcs, size_t n) {
-    if (!pwcs) {
-        return 0;
+std::u32string u32_from_u16(const std::u16string_view u16s) {
+
+    if (u16s.empty()) {
+        return std::u32string();
     }
 
-    std::vector<char32_t> utf32_string;
+
+    std::u32string u32s;
+    size_t n = u16s.size();
     size_t i = 0;
 
     // Iterate through the UTF-16 code units.
     while (i < n) {
-        char16_t u16_char = pwcs[i];
+        char16_t u16_ch = u16s[i];
 
         // Check for a high surrogate pair.
         // High surrogates are in the range 0xD800 to 0xDBFF.
-        if (u16_char >= 0xD800 && u16_char <= 0xDBFF) {
+        if (u16_ch >= 0xD800 && u16_ch <= 0xDBFF) {
             // Check if there is a next character and if it's a valid low surrogate.
             // Low surrogates are in the range 0xDC00 to 0xDFFF.
             if (i + 1 < n) {
-                char16_t u16_next_char = pwcs[i + 1];
-                if (u16_next_char >= 0xDC00 && u16_next_char <= 0xDFFF) {
+                char16_t u16_next_ch = u16s[i + 1];
+                if (u16_next_ch >= 0xDC00 && u16_next_ch <= 0xDFFF) {
                     // We have a valid surrogate pair.
                     // Reconstruct the 32-bit code point using the formula:
                     // U' = 0x10000 + (H - 0xD800) * 0x400 + (L - 0xDC00)
-                    char32_t code_point = 0x10000 + ((u16_char - 0xD800) << 10) + (u16_next_char - 0xDC00);
-                    utf32_string.push_back(code_point);
+                    char32_t code_point = 0x10000 + ((u16_ch - 0xD800) << 10) + (u16_next_ch - 0xDC00);
+                    u32s.append(1, code_point);
                     i += 2; // Move past both surrogate characters.
                     continue; // Continue to the next iteration of the loop.
                 }
@@ -360,10 +354,17 @@ int mk_w16cswidth(const char16_t *pwcs, size_t n) {
         // If it's not a valid surrogate pair, treat the character as a single
         // UTF-16 code unit and add it to the UTF-32 string. This handles
         // BMP characters (U+0000 to U+FFFF) and invalid lone surrogates.
-        utf32_string.push_back(u16_char);
+        u32s.append(1, u16_ch);
         i++; // Move to the next character.
     }
+    return u32s;
+}
 
-    // Call mk_wcswidth with the new UTF-32 array.
-    return mk_wcswidth(utf32_string.data(), utf32_string.size());
+int mk_uswidth(const std::u32string_view u32s) {
+    return mk_wcswidth(u32s.data(), u32s.size());
+}
+
+int mk_uswidth(const std::u16string_view u16s) {
+    std::u32string u32s = u32_from_u16(u16s);
+    return mk_wcswidth(u32s.data(), u32s.size());
 }
