@@ -20,7 +20,7 @@ public:
         std::string message = std::vformat(fmt.get(), std::make_format_args(args...));
         out() << message;
         #else
-        return std::print(out(), fmt, std::forward<Args>(args)...);
+        std::print(out(), fmt, std::forward<Args>(args)...);
         #endif
     }
 
@@ -30,7 +30,7 @@ public:
         std::string message = std::vformat(fmt.get(), std::make_format_args(args...));
         out() << message << '\n';
         #else
-        return std::println(out(), fmt, std::forward<Args>(args)...);
+        std::println(out(), fmt, std::forward<Args>(args)...);
         #endif
 
     }
