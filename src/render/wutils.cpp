@@ -1,7 +1,7 @@
-// Source: https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
-// Slightly modified to port:
+// Original Source: https://www.cl.cam.ac.uk/~mgk25/ucs/wcwidth.c
+// Changes:
 // - Port to C++
-// - Use fixed-length char and string types
+// - Use fixed-length char and string types instead of wchar_t
 // - Added a method for UTF-16 to UTF-32 conversion
 
 /*
@@ -69,6 +69,8 @@
 #include <uchar.h>
 #include <string>
 #include <stdint.h>
+
+#include "wutils.hpp"
 
 struct interval {
   char32_t first;
@@ -317,6 +319,8 @@ int mk_wcswidth_cjk(const char32_t *pwcs, size_t n)
   return width;
 }
 
+// UTF-16 to UTF-32 conversion function
+// Combines UTF-16 surrogate pairs, where present, into a single UTF-32 codepoint
 std::u32string u32_from_u16(const std::u16string_view u16s) {
 
     if (u16s.empty()) {
@@ -324,9 +328,10 @@ std::u32string u32_from_u16(const std::u16string_view u16s) {
     }
 
 
-    std::u32string u32s;
     size_t n = u16s.size();
     size_t i = 0;
+    std::u32string u32s;
+    u32s.reserve(n);
 
     // Iterate through the UTF-16 code units.
     while (i < n) {
@@ -360,11 +365,11 @@ std::u32string u32_from_u16(const std::u16string_view u16s) {
     return u32s;
 }
 
-int mk_uswidth(const std::u32string_view u32s) {
-    return mk_wcswidth(u32s.data(), u32s.size());
+size_t wutils::uswidth(const std::u32string_view u32s) {
+    return static_cast<size_t>(mk_wcswidth(u32s.data(), u32s.size()));
 }
 
-int mk_uswidth(const std::u16string_view u16s) {
+size_t wutils::uswidth(const std::u16string_view u16s) {
     std::u32string u32s = u32_from_u16(u16s);
-    return mk_wcswidth(u32s.data(), u32s.size());
+    return static_cast<size_t>(mk_wcswidth(u32s.data(), u32s.size()));
 }

@@ -4,11 +4,7 @@
 #include <wchar.h>
 #include <uchar.h>
 
-#if _WIN32
-// Include our own implementation of wcswidth since mingw64 doesn't include one
-// https://www.gnu.org/software/gnulib/manual/html_node/wcswidth.html
-#include "./wcwidth.hpp"
-#endif
+#include "./wutils.hpp"
 
 #include "Text.hpp"
 
@@ -32,13 +28,7 @@ size_t Text::getVisualLengthOf(TextChunk<std::string> chunk) {
 }
 
 size_t Text::getVisualLengthOf(TextChunk<std::wstring> chunk) {
-    return static_cast<size_t>(
-        #ifdef _WIN32
-        mk_wswidth(chunk.text)
-        #else
-        wcswidth(chunk.text.c_str(), chunk.text.size())
-        #endif
-    );
+    return wutils::wswidth(chunk.text);
 }
 
 size_t Text::getLength() const {

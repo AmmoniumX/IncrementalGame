@@ -43,7 +43,7 @@ if(MSVC OR MSYS)
 
     if(MSVC)
         # MSVC linker and compiler options
-        add_compile_options("/W4" "/WX" "/EHsc")
+        add_compile_options("/W4" "/WX" "/EHsc /utf-8")
         set(CMAKE_CXX_FLAGS_RELEASE "/O2")
         set(CMAKE_CXX_FLAGS_DEBUG "/Od /Zi")
         target_link_libraries(IncrementalGame PRIVATE ${PDCURSES_LIBRARIES})
