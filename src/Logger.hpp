@@ -28,7 +28,7 @@ public:
     static void println(std::format_string<Args...> fmt, Args&&... args) {
         #ifdef _MSC_VER
         std::string message = std::vformat(fmt.get(), std::make_format_args(args...));
-        out() << message << '\n';
+        out() << message << std::endl;
         #else
         std::println(out(), fmt, std::forward<Args>(args)...);
         #endif
