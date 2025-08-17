@@ -3,12 +3,17 @@
 #include <wchar.h>
 #include <uchar.h>
 #include <string>
+#include <iostream>
 #include <ranges>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 namespace wutils {
 
-size_t uswidth(const std::u32string_view u32s);
-size_t uswidth(const std::u16string_view u16s);
+int uswidth(const std::u32string_view u32s);
+int uswidth(const std::u16string_view u16s);
 
 static constexpr bool wchar_is_char16 = sizeof(wchar_t) == sizeof(char16_t);
 static constexpr bool wchar_is_char32 = sizeof(wchar_t) == sizeof(char32_t);
@@ -51,9 +56,31 @@ inline std::wstring wstring_from_ustring(ustring_view us) {
 
 #endif
 
-inline size_t wswidth(const std::wstring_view ws) {
+inline int wswidth(const std::wstring_view ws) {
     ustring us = ustring_from_wstring(ws);
     return uswidth(us);
 }
 
+
+// Windows sucks and can't properly print std::wcout to terminal so we use a wrapper
+inline void wprint(const std::wstring_view ws) {
+#ifdef _WIN32
+    WriteConsoleW(GetStdHandle(STD_OUTPUT_HANDLE), ws.data(), static_cast<DWORD>(ws.size()), NULL, NULL);
+#else
+    std::wcout << ws;
+#endif
+}
+
+inline void wprintln(const std::wstring_view ws) {
+#ifdef _WIN32
+    HANDLE console = GetStdHandle(STD_OUTPUT_HANDLE);
+    WriteConsoleW(console, ws.data(), static_cast<DWORD>(ws.size()), NULL, NULL);
+
+    WriteConsoleW(console, L"\n", 1, NULL, NULL);
+#else
+    std::wcout << ws << std::endl;
+#endif
+}
+
 } // namespace wutils
+
