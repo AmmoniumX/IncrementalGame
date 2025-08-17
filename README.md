@@ -19,7 +19,7 @@ A cli-based incremental game
 Run the following commands
 ```
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake ..
 cmake --build . --config Release
 ```
 
@@ -38,7 +38,7 @@ nmake.exe -f .\Makefile.vc WIDE=Y
 ```
 New-Item -Type Directory .\build
 cd .\build
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="C:/Users/user/src/PDCurses-3.9;C:/Users/user/src/PDCurses-3.9/wincon"
+cmake .. -DCMAKE_PREFIX_PATH="C:/Users/user/src/PDCurses-3.9;C:/Users/user/src/PDCurses-3.9/wincon"
 cmake --build . --config Release
 ```
 

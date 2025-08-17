@@ -4,6 +4,14 @@ cmake_minimum_required(VERSION 3.25)
 # Define the project name
 project(IncrementalGame VERSION 1.0)
 
+# Set default build type if not specified
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
+endif()
+
+# Set supported configuration types
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)
+
 # Set the C++ standard to C++23
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -78,6 +86,4 @@ endif()
 # Set the output directories for the different build types
 set_target_properties(IncrementalGame PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "bin"
-    RUNTIME_OUTPUT_DIRECTORY_DEBUG "bin/debug"
-    RUNTIME_OUTPUT_DIRECTORY_RELEASE "bin/release"
 )
