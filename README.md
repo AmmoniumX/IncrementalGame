@@ -28,19 +28,19 @@ cmake --build . --config Release
 
 2. Build PDCurses with widechar enabled:
 ```
-Invoke-WebRequest https://github.com/wmcbrine/PDCurses/archive/refs/tags/3.9.zip -OutFile .\PDCurses-3.9.zip
-Expand-Archive .\PDCurses-3.9.zip .
-cd .\PDCurses-3.9\wincon
-nmake.exe -f .\Makefile.vc WIDE=Y
+# Until upstream merges https://github.com/wmcbrine/PDCurses/pull/161 to fix https://github.com/wmcbrine/PDCurses/issues/176, use the PR fork
+git clone https://github.com/YWtheGod/PDCurses.git
+cd .\PDCurses\wincon
+nmake.exe -f .\Makefile.vc WIDE=Y CC=cl.exe
 ```
 
 3. Build this project: 
 ```
 New-Item -Type Directory .\build
 cd .\build
-cmake .. -DCMAKE_PREFIX_PATH="C:/Users/user/src/PDCurses-3.9;C:/Users/user/src/PDCurses-3.9/wincon"
+cmake .. -DCMAKE_PREFIX_PATH="C:/Users/user/src/PDCurses;C:/Users/user/src/PDCurses/wincon"
 cmake --build . --config Release
 ```
 
-(Note: Replace both paths of CMAKE_PREFIX_PATH with the location of the extracted PDCurses-3.9/ and PDCurses-3.9/wincon/)
+(Note: Replace both paths of CMAKE_PREFIX_PATH with the location of the cloned PDCurses/ and PDCurses/wincon/)
 
