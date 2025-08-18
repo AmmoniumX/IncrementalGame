@@ -1,8 +1,11 @@
 #include <ranges>
 #include <string>
 #include <type_traits>
+#include <variant>
+#include <numeric>
 #include <wchar.h>
 #include <uchar.h>
+#include <curses.h>
 
 #include "./wutils.hpp"
 

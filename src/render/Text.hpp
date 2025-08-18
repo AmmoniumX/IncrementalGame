@@ -6,21 +6,13 @@
 #include <string>
 #include <variant>
 #include <vector>
-
-#ifdef _WIN32
-    #include <curses.h> // from PDCurses
-#else
-    #include <ncurses.h>
-#endif
-
-// #include <ncursesw/ncurses.h>
 #include <cwchar>
 #include <print>
-#include <ranges>
-#include <numeric>
 #include <concepts>
 #include <span>
 #include <initializer_list>
+
+#include <curses.h>
 
 template<typename T>
 concept TextString = std::same_as<T, std::string> || std::same_as<T, std::wstring>;

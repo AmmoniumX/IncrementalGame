@@ -1,12 +1,5 @@
 #pragma once
 
-#ifdef _WIN32
-    #include <curses.h> // from PDCurses
-#else
-    #include <ncurses.h>
-#endif
-
-// #include <ncursesw/ncurses.h>
 #include <string>
 #include <memory>
 #include <initializer_list>
@@ -15,7 +8,8 @@
 #include <span>
 #include <functional>
 
-#include "../game.hpp"
+#include <curses.h>
+
 #include "./Text.hpp"
 
 /*

@@ -1,3 +1,5 @@
+#include <curses.h>
+
 #include "../Logger.hpp"
 #include "../game.hpp"
 #include "Window.hpp"

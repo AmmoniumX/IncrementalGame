@@ -2,16 +2,6 @@
 
 #include <atomic>
 #include <string>
-#include <print>
-#include <format>
-#include <fstream>
-
-#ifdef _WIN32
-    #include <curses.h> // from PDCurses
-#else
-    #include <ncurses.h>
-#endif
-// #include <ncursesw/ncurses.h>
 
 #include "BigNum.hpp"
 #include "json.hpp"

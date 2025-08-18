@@ -1,9 +1,6 @@
 #include <atomic>
 #include <ctime>
 #include <cstdlib>
-#ifndef _WIN32
-#include <getopt.h>
-#endif
 #include <iostream>
 #include <print>
 #include <string>
@@ -11,11 +8,7 @@
 #include <fstream>
 #include <filesystem>
 
-#ifdef _WIN32
-    #include <curses.h> // from PDCurses
-#else
-    #include <ncursesw/ncurses.h>
-#endif
+#include <curses.h>
 
 #include "game.hpp"
 #include "Logger.hpp"
@@ -32,10 +25,10 @@ namespace {
 }
 std::ofstream &Logger::out() { return logstream; }
 
-// Ncurses setup
+// curses setup
 void setupNcurses() {
-    setlocale(LC_ALL, ""); // Enable UTF-8 support in ncurses
-    initscr();             // Initialize ncurses mode
+    setlocale(LC_ALL, ""); // Enable UTF-8 support in
+    initscr();
 
     // Check terminal color support
     if (has_colors()) {
@@ -150,8 +143,8 @@ void run() {
 
 void init(fs::path savepath) {
     
-    // Initialize ncurses
-    Logger::println("Initializing ncurses...");
+    // Initialize curses
+    Logger::println("Initializing curses...");
     setupNcurses();    
 
     // Initialize systems
@@ -182,21 +175,6 @@ void ensure_directory(fs::path directory) {
 
 int main(int argc, char *argv[]) {
     string savefile = "save.json";
-
-    // Parse arguments
-    // int opt;
-    // static struct option long_options[] = {{"save", required_argument, 0, 0},
-    //                                        {0, 0, 0, 0}};
-    // int option_index = 0;
-    // while ((opt = getopt_long(argc, argv, "", long_options, &option_index)) !=
-    //        -1) {
-    //     if (opt == 0 && strcmp(long_options[option_index].name, "save") == 0) {
-    //         savefile = optarg;
-    //     } else {
-    //         std::println("Usage: {} [--save savefile]", argv[0]);
-    //         return EXIT_FAILURE;
-    //     }
-    // }
     
     // Loop through the command-line arguments starting from the first
     // user-provided argument (at index 1), since argv[0] is the program name.
