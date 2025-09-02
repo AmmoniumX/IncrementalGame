@@ -20,10 +20,10 @@ namespace fs = std::filesystem;
 // Constants
 std::atomic_bool Game::exit = false;
 using nlohmann::json;
-namespace {
-    std::ofstream logstream("./logs/latest.log");
+namespace detail {
+    std::ofstream logstream;
 }
-std::ofstream &Logger::out() { return logstream; }
+std::ofstream &Logger::out() { return detail::logstream; }
 
 // curses setup
 void setupNcurses() {
@@ -119,13 +119,13 @@ void cleanup(fs::path savepath) {
 
 void ensure_directory(fs::path directory) {
     if (fs::exists(directory) && !fs::is_directory(directory)) {
-        Logger::println("Directory path exists but isn't a directory: ", directory.string());
+        std::println(stderr, "Directory path exists but isn't a directory: ", directory.string());
         std::exit(EXIT_FAILURE);
     } else if (!fs::exists(directory)) {
         try {
             (void) fs::create_directory(directory);
         } catch (fs::filesystem_error &ex) {
-            Logger::println("Error creating directory {}: {}", directory.string(), ex.what());
+            std::println(stderr, "Error creating directory {}: {}", directory.string(), ex.what());
             std::exit(EXIT_FAILURE);
         }
     }
@@ -167,11 +167,13 @@ int main(int argc, char *argv[]) {
     fs::path savedir("./saves/");
     ensure_directory(savedir);
     fs::path savepath = savedir / savefile;
+    detail::logstream.open("./logs/latest.log");
 
     // Setup
     init(savepath);
     run();
     cleanup(savepath);
 
+    detail::logstream.close();
     return EXIT_SUCCESS;
 }
