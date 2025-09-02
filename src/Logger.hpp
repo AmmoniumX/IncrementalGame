@@ -22,6 +22,7 @@ public:
         #else
         std::print(out(), fmt, std::forward<Args>(args)...);
         #endif
+        out().flush();
     }
 
     template <class... Args>
@@ -32,6 +33,7 @@ public:
         #else
         std::println(out(), fmt, std::forward<Args>(args)...);
         #endif
+        out().flush();
 
     }
 };

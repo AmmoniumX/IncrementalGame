@@ -13,7 +13,7 @@
 #include "game.hpp"
 #include "Logger.hpp"
 #include "./SystemManager.hpp"
-#include "./systems/ResourceManager.hpp"
+#include "./resources/SaveData.hpp"
 
 namespace fs = std::filesystem;
 
@@ -74,52 +74,6 @@ T get_or(const json &j, const std::string &key, const T &default_value) {
     return default_value;
 }
 
-// Convert game data to json
-json to_json() { return ResourceManager::instance().serialize(); }
-
-// Convert json to game data
-void from_json(const json &j) { ResourceManager::instance().deserialize(j); }
-
-// Save game data
-void save(const fs::path &savepath) {
-    Logger::println("Saving game data to {}", savepath.string());
-
-    // Convert to json
-    json j = to_json();
-    std::ofstream o(savepath);
-    if (!o.is_open()) {
-        Logger::println("Error: Could not open file {}", savepath.string());
-        return;
-    }
-    o << j.dump(0) << std::endl;
-
-}
-
-// Load game data
-void load(const fs::path &savepath) {
-    Logger::println("Loading game data from {}", savepath.string());
-
-    // Load json from file
-    std::ifstream file(savepath);
-    if (!file.is_open()) {
-        Logger::println(
-                     "File not found, ResourceManager will be empty!");
-        return;
-    }
-
-    json j;
-    try {
-        file >> j;
-    } catch (const std::exception &e) {
-        Logger::println(
-                     "Error: Could not parse json! Is data corrupted? {}",
-                     e.what());
-        std::exit(EXIT_FAILURE);
-    }
-    from_json(j);
-
-    return;
-}
 void gameTick() {
     SystemManager::instance().onTick();
 }
@@ -151,12 +105,16 @@ void init(fs::path savepath) {
     SystemManager::init();
 
     // Load game data
-    load(savepath);
+    if (fs::is_regular_file(savepath)) {
+        std::ifstream file(savepath);
+        SaveData::instance().deserialize(file);
+    }
 }
 
 void cleanup(fs::path savepath) {
     // Save game data
-    save(savepath);
+    std::ofstream file(savepath);
+    SaveData::instance().serialize(file);
 }
 
 void ensure_directory(fs::path directory) {

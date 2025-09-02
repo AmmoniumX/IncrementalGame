@@ -28,7 +28,7 @@ cmake --build . --config Release
 
 2. Build PDCurses with widechar enabled:
 ```
-# Until upstream merges https://github.com/wmcbrine/PDCurses/pull/161 to fix https://github.com/wmcbrine/PDCurses/issues/176, use the PR fork
+# Until upstream fixes https://github.com/wmcbrine/PDCurses/issues/176, use a fork
 git clone https://github.com/YWtheGod/PDCurses.git
 cd .\PDCurses\wincon
 nmake.exe -f .\Makefile.vc WIDE=Y CC=cl.exe

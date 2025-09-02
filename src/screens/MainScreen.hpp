@@ -3,9 +3,8 @@
 #include "../render/Screen.hpp"
 #include "../render/Text.hpp"
 #include "../render/Window.hpp"
-#include "../resources/Inventory.hpp"
+#include "../resources/SaveData.hpp"
 #include "../resources/Recipes.hpp"
-#include "../systems/ResourceManager.hpp"
 #include <array>
 #include <cmath>
 #include <functional>
@@ -49,8 +48,8 @@ class MainScreen : public Screen {
     
     std::unordered_map<Subwindows, WindowGroup> windows;
 
-    std::shared_ptr<Inventory> inventory;
-    std::shared_ptr<Recipes> recipes;
+    SaveData &save;
+    Recipes &recipes;
 
     Subwindows activeWindow = CRAFTING;
 
@@ -68,21 +67,21 @@ class MainScreen : public Screen {
 
     void refreshInventoryCounts();
 
-    std::unordered_map<char, std::function<void(MainScreen*, Inventory*)>> inputListeners;
+    std::unordered_map<char, std::function<void(MainScreen*, SaveData&)>> inputListeners;
 
-    void registerListener(char input, std::function<void(MainScreen*, Inventory*)> listener);
+    void registerListener(char input, std::function<void(MainScreen*, SaveData&)> listener);
 
     int numCraftingOptions = 0;
     template<TextString T>
     void addCraftingOption(char input, std::initializer_list<Text::TextChunk<T>> init, 
             Recipes::Recipe recipe) {
         craftingWindow.putText<std::string>(++numCraftingOptions, 1, init);
-        registerListener(input, [recipe](MainScreen *scr, Inventory *inv) {
-            scr->attemptRecipe(inv, recipe);
+        registerListener(input, [recipe](MainScreen *scr, SaveData &save) {
+            scr->attemptRecipe(save, recipe);
         });
     }
 
-    bool attemptRecipe(Inventory *inv, Recipes::Recipe recipe);
+    bool attemptRecipe(SaveData &save, Recipes::Recipe recipe);
 
   public:
     virtual ~MainScreen() override = default;

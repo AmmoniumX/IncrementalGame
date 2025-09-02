@@ -1,0 +1,39 @@
+{
+    "addRecipes": [
+
+    {
+    "type": "handcrafting", 
+    "id": "iron",
+    "inputs": [], 
+    "outputs": [{"item": "iron", "count": 1}]
+    },
+
+    {
+    "type": "handcrafting", 
+    "id": "copper",
+    "inputs": [], 
+    "outputs": [{"item": "copper", "count": 1}]
+    },
+
+    {
+    "type": "handcrafting",
+    "id": "iron gear",
+    "inputs": [{"item": "iron", "count": 4}],
+    "outputs": [{"item": "iron gear", "count": 1}]
+    },
+
+    {
+    "type": "handcrafting",
+    "id": "copper wire",
+    "inputs": [{"item": "copper", "count": 1}],
+    "outputs": [{"item": "copper wire", "count": 4}]
+    },
+
+    {
+    "type": "handcrafting",
+    "id": "motor",
+    "inputs": [{"item": "iron gear", "count": 2}, {"item": "copper wire", "count": 10}],
+    "outputs": [{"item": "motor", "count": 1}]
+    }
+    ]
+}

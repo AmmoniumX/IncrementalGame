@@ -13,19 +13,12 @@ std::optional<const Recipes::Recipe> Recipes::get(std::string id) {
     return std::nullopt;
 }
 
-void Recipes::init() {
-    static bool registered = false;
-    if (!registered) {
-        ResourceManager::instance().create(RESOURCE_ID, std::shared_ptr<Recipes>(new Recipes));
-        registered = true;
-    }
-}
-
-std::optional<json> Recipes::serialize() const {
+json Recipes::serialize() const {
     // TODO json recipe serialization
-    return std::nullopt;
+    return json();
 }
 
-void Recipes::deserialize([[maybe_unused]] const json& j) {
+void Recipes::deserialize(const json& j) {
     // TODO json recipe deserialization
+    (void) j;
 }

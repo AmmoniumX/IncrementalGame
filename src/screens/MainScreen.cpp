@@ -36,7 +36,7 @@ void MainScreen::switchWindow(Subwindows target) {
 
 void MainScreen::refreshInventoryCounts() {
 
-    const std::map<std::string, BigNum> items = inventory->getItems();
+    const std::map<std::string, BigNum> items = save.getItems();
 
     static size_t charsPerLine = COLS - 2;
     std::array<std::string, 3> display_lines({"", "", ""});
@@ -80,16 +80,16 @@ void MainScreen::refreshInventoryCounts() {
     }
 }
 
-void MainScreen::registerListener(char input, std::function<void(MainScreen*, Inventory*)> listener) {
+void MainScreen::registerListener(char input, std::function<void(MainScreen*, SaveData&)> listener) {
     inputListeners.insert_or_assign(input, listener);
 }
 
 
-bool MainScreen::attemptRecipe(Inventory *inv, Recipes::Recipe recipe) {
+bool MainScreen::attemptRecipe(SaveData &save, Recipes::Recipe recipe) {
 
     // Check feasibility
     for (const auto &input : recipe.inputs) {
-        if (inv->getItem(input.id) < input.amount) {
+        if (save.getItem(input.id) < input.amount) {
             notify(std::format("Not enough items: {}", input.id));
             return false;
         }
@@ -97,10 +97,10 @@ bool MainScreen::attemptRecipe(Inventory *inv, Recipes::Recipe recipe) {
 
     // Execute craft
     for (const auto &input : recipe.inputs) {
-        inv->subtractItem(input.id, input.amount);
+        save.subtractItem(input.id, input.amount);
     }
     for (const auto &output : recipe.outputs) {
-        inv->addItem(output.id, output.amount);
+        save.addItem(output.id, output.amount);
     }
     return true;
 }
@@ -124,37 +124,37 @@ MainScreen::MainScreen() :
         {CRAFTING, WindowGroup(craftingWindow, sidebarCraftingWindow, GAME_COLORS::YELLOW_GRAY, GAME_COLORS::YELLOW_BLACK)},
         {UPGRADES, WindowGroup(upgradesWindow, sidebarUpgradesWindow, GAME_COLORS::RED_GRAY, GAME_COLORS::RED_BLACK)}
     }),
-    inventory(std::static_pointer_cast<Inventory>(ResourceManager::instance().getResource(Inventory::RESOURCE_ID))),
-    recipes(std::static_pointer_cast<Recipes>(ResourceManager::instance().getResource(Recipes::RESOURCE_ID)))
+    save(SaveData::instance()),
+    recipes(Recipes::instance())
 {
     (void)inventoryWindow.setTitle("Inventory", Window::Alignment::CENTER, GAME_COLORS::YELLOW_BLACK);
     (void)upgradesWindow.setTitle("Upgrades", Window::Alignment::LEFT, GAME_COLORS::RED_BLACK, 1);
     upgradeOptions.emplace("example_upgrade", upgradesWindow.putText(1, 1, "Example"s));
     (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT, GAME_COLORS::YELLOW_BLACK, 1);
-    using Items = Inventory::Items;
+    using Items = SaveData::Items;
     addCraftingOption<std::string>('1', {
                     {GAME_COLORS::WHITE_BLACK, "[1] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}
-                }, getOrThrow(recipes->get(Items::IRON), "Invalid recipe"));
+                }, getOrThrow(recipes.get(Items::IRON), "Invalid recipe"));
     addCraftingOption<std::string>('2', {
                 {GAME_COLORS::WHITE_BLACK, "[2] "s},
                 {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}
-            }, getOrThrow(recipes->get(Items::COPPER), "Invalid recipe"));
+            }, getOrThrow(recipes.get(Items::COPPER), "Invalid recipe"));
     addCraftingOption<std::string>('3', {
                 {GAME_COLORS::WHITE_BLACK, "[3] "s},
                 {GAME_COLORS::YELLOW_BLACK, "Iron Gear 1x "s},
                 {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}
-            }, getOrThrow(recipes->get(Items::IRON_GEAR), "Invalid recipe"));
+            }, getOrThrow(recipes.get(Items::IRON_GEAR), "Invalid recipe"));
     addCraftingOption<std::string>('4', {
                     {GAME_COLORS::WHITE_BLACK, "[4] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Copper Wire 3x "s},
                     {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}
-                }, getOrThrow(recipes->get(Items::COPPER_WIRE), "Invalid recipe"));
+                }, getOrThrow(recipes.get(Items::COPPER_WIRE), "Invalid recipe"));
     addCraftingOption<std::string>('5', {
                     {GAME_COLORS::WHITE_BLACK, "[5] "s},
                     {GAME_COLORS::YELLOW_BLACK, "Motor 1x "s},
                     {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"s}
-                }, getOrThrow(recipes->get(Items::MOTOR), "Invalid recipe"));
+                }, getOrThrow(recipes.get(Items::MOTOR), "Invalid recipe"));
     (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s, GAME_COLORS::DEFAULT);
     (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s, GAME_COLORS::DEFAULT);
 }
@@ -179,6 +179,7 @@ void MainScreen::onTick() {
     // Process global screen inputs
     switch (input) {
     case 'q':
+        Logger::println("Requesting Exit");
         ScreenManager::instance().requestExit();
         return;
     case 'C':
@@ -195,7 +196,7 @@ void MainScreen::onTick() {
     }
     // Process registered input listeners
     if (auto i = inputListeners.find(input); i != inputListeners.end()) {
-        i->second(this, inventory.get());
+        i->second(this, save);
         return;
     }
 

@@ -5,23 +5,26 @@
 #include <unordered_map>
 #include <vector>
 
-#include "../systems/ResourceManager.hpp"
-#include "./Inventory.hpp"
+#include "./SaveData.hpp"
 
-class Recipes : public Resource {
+class Recipes {
     private:
     Recipes() = default;
 
     public:
-    static inline const std::string RESOURCE_ID = "Recipes";
     struct Recipe {
         const std::string recipe_type;
-        const std::vector<Inventory::ItemStack> inputs;
-        const std::vector<Inventory::ItemStack> outputs;
+        const std::vector<SaveData::ItemStack> inputs;
+        const std::vector<SaveData::ItemStack> outputs;
     };
 
+    static Recipes &instance() {
+        static Recipes instance;
+        return instance;
+    }
+
     // TODO store as JSON and implement recipe (de)serialization
-    using Items = Inventory::Items;
+    using Items = SaveData::Items;
     std::unordered_map<string, Recipe> recipes {
         {Items::IRON, {"crafting", {}, {{Items::IRON, 1}}}},
         {Items::COPPER, {"crafting", {}, {{Items::COPPER, 1}}}},
@@ -36,8 +39,8 @@ class Recipes : public Resource {
 
     static void init();
 
-    std::optional<json> serialize() const override;
+    json serialize() const;
 
-    void deserialize([[maybe_unused]] const json& j) override;
+    void deserialize(const json& j);
 
 };

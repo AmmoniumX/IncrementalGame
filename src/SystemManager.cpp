@@ -4,14 +4,10 @@
 #include "Logger.hpp"
 #include "game.hpp"
 #include "SystemManager.hpp"
-#include "./systems/ResourceManager.hpp"
 #include "./systems/ScreenManager.hpp"
 
 void SystemManager::init() {
     Logger::println("Registering systems...");
-
-    ResourceManager::init();
-    SystemManager::instance().registerSystem(&ResourceManager::instance());
 
     ScreenManager::init();
     SystemManager::instance().registerSystem(&ScreenManager::instance());
@@ -49,6 +45,7 @@ void SystemManager::onTick() {
     std::chrono::duration<double> sleep_time = target_duration - delta;
 
     if (sleep_time.count() > 0) {
-        std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::nanoseconds>(sleep_time));
+        // Logger::println("Trying to sleep for {}ms...", std::chrono::duration_cast<std::chrono::milliseconds>(sleep_time));
+        std::this_thread::sleep_for(std::chrono::duration_cast<std::chrono::milliseconds>(sleep_time));
     }
 }

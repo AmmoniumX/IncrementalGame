@@ -1,20 +1,26 @@
 #pragma once
 
 #include <map>
-#include <optional>
 #include <string>
 #include <string_view>
+#include <fstream>
 
 #include "../game.hpp"
-#include "../systems/ResourceManager.hpp"
 
-class Inventory : public Resource {
+class SaveData {
   private:
     std::map<std::string, BigNum> items;
-    Inventory() = default;
+    SaveData() = default;
     
+    void fromJson(const json);
+    json toJson() const;
+
   public:
-    static inline const std::string RESOURCE_ID = "Inventory";
+
+    static SaveData &instance() {
+        static SaveData instance;
+        return instance;
+    }
 
     struct Items {
         static inline const std::string IRON = "Iron";
@@ -29,8 +35,6 @@ class Inventory : public Resource {
         const BigNum amount;
     };
 
-    static void init();
-
     const std::map<std::string, BigNum> &getItems() const;
 
     BigNum getItem(const std::string_view _item) const;
@@ -41,12 +45,12 @@ class Inventory : public Resource {
 
     void subtractItem(const std::string_view _item, const BigNum &amount);
 
-    std::optional<json> serialize() const override;
+    void serialize(std::ofstream &file) const;
 
-    void deserialize(const json &j) override;
+    void deserialize(std::ifstream &file);
 
     // Prevent copying and assignment
-    Inventory(const Inventory &) = delete;
-    Inventory &operator=(const Inventory &) = delete;
-    ~Inventory() = default;
+    SaveData(const SaveData &) = delete;
+    SaveData &operator=(const SaveData &) = delete;
+    ~SaveData() = default;
 };
