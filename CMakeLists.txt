@@ -19,6 +19,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Specify source files first
 file(GLOB_RECURSE SRC_FILES "src/*.cpp")
 
+include_directories("include")
+
 # Create the executable target
 add_executable(IncrementalGame ${SRC_FILES})
 

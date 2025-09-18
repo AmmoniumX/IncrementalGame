@@ -4,7 +4,7 @@
 #include <string>
 
 #include "BigNum.hpp"
-#include "json.hpp"
+#include "../include/json.hpp"
 
 using nlohmann::json;
 using std::string;

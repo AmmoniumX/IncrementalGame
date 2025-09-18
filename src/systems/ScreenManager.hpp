@@ -1,8 +1,8 @@
 #pragma once
 
 #include <functional>
-#include <print>
 #include <list>
+#include <print>
 #include <string_view>
 
 #include <curses.h>
@@ -13,39 +13,40 @@
 using namespace std::literals::string_view_literals;
 
 /*
-* @class ScreenManager
-* @brief A class to manage the current screen and handle screen changes.
-*/
+ * @class ScreenManager
+ * @brief A class to manage the current screen and handle screen changes.
+ */
 class ScreenManager : public System { // Singleton class
 private:
-    Screen *currentScreen = nullptr;
-    Screen *nextScreen = nullptr;
-    std::list<std::unique_ptr<Screen>> screens;
-    bool screenChange = false;
+  Screen *currentScreen = nullptr;
+  Screen *nextScreen = nullptr;
+  std::list<std::unique_ptr<Screen>> screens;
+  bool screenChange = false;
 
-    // Private constructor for singleton
-    ScreenManager() {};
-    
-    // Deleted copy constructor and assignment operator
-    ScreenManager(const ScreenManager&) = delete;
-    ScreenManager& operator=(const ScreenManager&) = delete;
+  // Private constructor for singleton
+  ScreenManager() {};
+
+  // Deleted copy constructor and assignment operator
+  ScreenManager(const ScreenManager &) = delete;
+  ScreenManager &operator=(const ScreenManager &) = delete;
 
 public:
-    static constexpr std::string_view RESOURCE_ID = "ScreenManager"sv;
+  static constexpr std::string_view RESOURCE_ID = "ScreenManager"sv;
 
-    static void init();
+  static void init();
 
-    static ScreenManager &instance();
+  static ScreenManager &instance();
 
-    Screen *getCurrentScreen() const;    
+  Screen *getCurrentScreen() const;
 
-    std::reference_wrapper<Screen> registerScreen(std::unique_ptr<Screen> &&screen);
+  std::reference_wrapper<Screen>
+  registerScreen(std::unique_ptr<Screen> &&screen);
 
-    void changeScreen(Screen *screen);
+  void changeScreen(Screen *screen);
 
-    char getInput();
+  char getInput();
 
-    void onTick() override;
+  void onTick() override;
 
-    virtual ~ScreenManager() override;
+  virtual ~ScreenManager() override;
 };
