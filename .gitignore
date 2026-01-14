@@ -44,3 +44,4 @@ logs/
 .cache/
 compile_commands.json
 build/
+build-debug/
