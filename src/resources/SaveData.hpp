@@ -12,7 +12,7 @@ private:
   std::map<std::string, BigNum> items;
   SaveData() = default;
 
-  void fromJson(const json);
+  void fromJson(const json &);
   json toJson() const;
 
 public:

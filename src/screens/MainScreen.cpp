@@ -6,8 +6,7 @@
 
 void MainScreen::notify(const std::string &text) {
   notifyText.setText(text, true);
-  notifyTime = NOTIF_DURATION;
-  notifyClear = false;
+  notifyStart = Clock::now();
 }
 
 void MainScreen::rotateWindows() {
@@ -108,7 +107,7 @@ bool MainScreen::attemptRecipe(SaveData &save, Recipes::Recipe recipe) {
 MainScreen::MainScreen()
     : Screen(),
       // Initialize reference_wrapper members here
-      notifyText(putText(LINES - 1, 0, "")),
+      notifyText(putText(LINES - 1, 0, "")), notifyStart{},
       inventoryWindow(
           createWindow(0, 0, COLS, 5, true, GAME_COLORS::GRAY_BLACK)),
       inventoryContents(
@@ -180,12 +179,12 @@ std::unique_ptr<Screen> MainScreen::create() {
 void MainScreen::onTick() {
 
   // Update screen elements
-  if (notifyTime > 0) {
-    notifyTime--;
-  }
-  if (notifyTime <= 0 && !notifyClear) {
-    notifyText.reset();
-    notifyClear = true;
+  if (notifyStart.has_value()) {
+    auto now = Clock::now();
+    if (now - *notifyStart > NOTIF_DURATION) {
+      notifyText.reset();
+      notifyStart.reset();
+    }
   }
   refreshInventoryCounts();
 

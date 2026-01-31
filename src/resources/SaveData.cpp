@@ -38,22 +38,32 @@ void SaveData::subtractItem(const std::string_view _item,
 
 json SaveData::toJson() const {
   json j = json::object();
+  // Items
+  auto &j_items = j["items"];
   for (const auto &item : items) {
-    j[item.first] = item.second.serialize();
+    j_items[item.first] = item.second.serialize();
   }
   return j;
 }
 
-void SaveData::fromJson(const json j) {
-  for (const auto &[key, value] : j.items()) {
-    std::string valueStr = value.is_string() ? value.get<std::string>() : "0";
-    items[key] = BigNum::deserialize(valueStr);
+void SaveData::fromJson(const json &j) {
+  if (j.contains("items") && j["items"].is_object()) {
+    const auto &j_items = j["items"];
+
+    // Iterate through the nested "items" object
+    for (auto it = j_items.begin(); it != j_items.end(); ++it) {
+      std::string key = it.key();
+      auto &value = it.value();
+
+      std::string valueStr = value.is_string() ? value.get<std::string>() : "0";
+      items[key] = BigNum::deserialize(valueStr);
+    }
   }
 }
 
 void SaveData::serialize(std::ofstream &file) const {
   json j = SaveData::toJson();
-  file << j.dump();
+  file << j.dump() << std::endl;
 }
 
 void SaveData::deserialize(std::ifstream &file) {

@@ -1,25 +1,26 @@
 #pragma once
 
+#include "../game.hpp"
 #include "../render/Screen.hpp"
 #include "../render/Text.hpp"
 #include "../render/Window.hpp"
 #include "../resources/Recipes.hpp"
 #include "../resources/SaveData.hpp"
 #include <array>
-#include <cmath>
+#include <chrono>
 #include <functional>
 #include <map>
-#include <print>
+#include <optional>
 #include <unordered_map>
 
 using namespace std::string_literals;
+using namespace std::chrono_literals;
 
 class MainScreen : public Screen {
 private:
-  static inline const int NOTIF_DURATION = static_cast<int>(1.5 * FRAME_RATE);
+  static inline constexpr std::chrono::duration NOTIF_DURATION = 1.5s;
   Text &notifyText;
-  int notifyTime = 0;
-  bool notifyClear = false;
+  std::optional<TimePoint> notifyStart;
 
   Window &inventoryWindow;
   std::array<std::reference_wrapper<Text>, 3> inventoryContents;
