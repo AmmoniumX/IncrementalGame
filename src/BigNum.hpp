@@ -765,7 +765,7 @@ class BigNum {
 
     // Returns number as intmax_t, or nullopt if the number is too large
     MAYBE_CONSTEXPR std::optional<intmax_t> to_number() const {
-        int total_digits = e + std::log10(std::abs(m)) + 1;
+        int total_digits = static_cast<int>(e + std::log10(std::abs(m)) + 1);
         if (total_digits > std::numeric_limits<intmax_t>::digits10) {
             // std::cerr << "Number is too large to convert to intmax_t: " <<
             // this->to_string() << std::endl;
