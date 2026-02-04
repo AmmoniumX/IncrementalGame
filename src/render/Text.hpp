@@ -1,37 +1,28 @@
 #pragma once
 
 #include <algorithm>
-#include <concepts>
 #include <cstddef>
 #include <cstdio>
 #include <cwchar>
 #include <initializer_list>
-#include <print>
 #include <span>
 #include <string>
-#include <variant>
+#include <string_view>
 #include <vector>
 
 #include <curses.h>
 
-template <typename T>
-concept TextString =
-    std::same_as<T, std::string> || std::same_as<T, std::wstring>;
-
 class Text {
 public:
-  template <TextString str_t> struct TextChunk {
-    int color_pair = 0;
-    str_t text = str_t();
+  struct TextChunk {
+    int color_pair{0};
+    std::string text{};
   };
 
 private:
   int y, x;
 
-  using TextChunks = std::variant<std::vector<TextChunk<std::string>>,
-                                  std::vector<TextChunk<std::wstring>>>;
-
-  TextChunks textChunks;
+  std::vector<TextChunk> textChunks;
 
   WINDOW *win = stdscr;
   size_t needsClear = 0;
@@ -39,29 +30,22 @@ private:
 
   void doClear();
 
-  static size_t getVisualLengthOf(TextChunk<std::string> chunk);
-
-  static size_t getVisualLengthOf(TextChunk<std::wstring> chunk);
+  static size_t getVisualLengthOf(const TextChunk &chunk);
 
 public:
-  template <TextString T>
-  Text(int y, int x, const T &txt, int color_pair = 0, WINDOW *win = stdscr)
-      : y(y), x(x), textChunks(std::vector<TextChunk<T>>({{color_pair, txt}})),
-        win(win) {}
-
-  template <TextString T>
-  Text(int y, int x, const std::span<const TextChunk<T>> &chunks,
+  Text(int y, int x, const std::string txt, int color_pair = 0,
        WINDOW *win = stdscr)
       : y(y), x(x),
-        textChunks(std::vector<TextChunk<T>>(chunks.begin(), chunks.end())),
+        textChunks(std::vector<TextChunk>({TextChunk{color_pair, txt}})),
         win(win) {}
 
-  template <TextString T>
-  Text(int y, int x, const std::initializer_list<const TextChunk<T>> &chunks,
+  Text(int y, int x, const std::span<const TextChunk> chunks,
        WINDOW *win = stdscr)
-      : y(y), x(x),
-        textChunks(std::vector<TextChunk<T>>(chunks.begin(), chunks.end())),
-        win(win) {}
+      : y(y), x(x), textChunks(chunks.begin(), chunks.end()), win(win) {}
+
+  Text(int y, int x, const std::initializer_list<TextChunk> &chunks,
+       WINDOW *win = stdscr)
+      : y(y), x(x), textChunks(chunks.begin(), chunks.end()), win(win) {}
 
   size_t getLength() const;
 
@@ -72,14 +56,13 @@ public:
   int getX() const;
   int getY() const;
 
-  template <TextString T>
-  void setText(const T &new_text, bool clear = false, int color_pair = 0) {
+  void setText(std::string new_text, bool clear = false, int color_pair = 0) {
     if (clear)
       needsClear = std::max(needsClear, getVisualLength());
-    textChunks = std::vector<TextChunk<T>>({{color_pair, new_text}});
+    textChunks = std::vector<TextChunk>({{color_pair, new_text}});
   }
 
-  std::variant<std::string, std::wstring> getText();
+  std::string getText();
 
   void setX(int px);
   void setY(int py);

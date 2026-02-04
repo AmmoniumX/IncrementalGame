@@ -25,7 +25,7 @@ target_include_directories(IncrementalGame PRIVATE "include")
 # MSVC and MSYS
 if(MSVC OR MSYS)
     # PDCurses-specific compiler definitions
-    target_compile_definitions(IncrementalGame PRIVATE PDCURSES_WCS PDC_WIDE)
+    target_compile_definitions(IncrementalGame PRIVATE PDC_FORCE_UTF8)
 
     # MSVC doesn't support -fno-trapping-math
     if(NOT MSVC)
@@ -52,7 +52,7 @@ if(MSVC OR MSYS)
         target_compile_options(IncrementalGame PRIVATE "/W2" "/WX" "/EHsc" "/utf-8")
         set(CMAKE_CXX_FLAGS_RELEASE "/O2")
         set(CMAKE_CXX_FLAGS_DEBUG "/Od /Zi")
-        target_link_libraries(IncrementalGame PRIVATE ${PDCURSES_LIBRARIES})
+        target_link_libraries(IncrementalGame PRIVATE ${PDCURSES_LIBRARIES} winmm)
         
     elseif(MSYS)
         # MSYS/MinGW linker and compiler options

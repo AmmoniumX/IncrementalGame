@@ -59,9 +59,9 @@ private:
   void switchWindow(Subwindows target);
 
   template <typename T>
-  T getOrThrow(const std::optional<T> &opt, const std::string &msg) {
+  T getOrThrow(const std::optional<T> &opt, std::string_view msg) {
     if (!opt)
-      throw std::runtime_error(msg);
+      throw std::runtime_error(std::string{msg});
     return *opt;
   }
 
@@ -74,11 +74,10 @@ private:
                         std::function<void(MainScreen *, SaveData &)> listener);
 
   int numCraftingOptions = 0;
-  template <TextString T>
   void addCraftingOption(char input,
-                         std::initializer_list<Text::TextChunk<T>> init,
+                         std::initializer_list<Text::TextChunk> init,
                          Recipes::Recipe recipe) {
-    craftingWindow.putText<std::string>(++numCraftingOptions, 1, init);
+    craftingWindow.putText(++numCraftingOptions, 1, init);
     registerListener(input, [recipe](MainScreen *scr, SaveData &save) {
       scr->attemptRecipe(save, recipe);
     });

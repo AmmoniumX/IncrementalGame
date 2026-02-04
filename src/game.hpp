@@ -30,5 +30,5 @@ extern std::atomic_bool exit;
 } // namespace Game
 
 // Constants
-static inline const int TARGET_TPS = 30;
-static inline const std::chrono::duration TARGET_TICK_TIME = 1s / TARGET_TPS;
+inline constexpr int TARGET_TPS = 30;
+inline constexpr std::chrono::duration TARGET_TICK_TIME = 1s / TARGET_TPS;

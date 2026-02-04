@@ -1,8 +1,14 @@
+#include <string>
+#include <string_view>
+
 #include "../Logger.hpp"
 #include "../game.hpp"
 #include "../systems/ScreenManager.hpp"
 
 #include "MainScreen.hpp"
+
+using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 void MainScreen::notify(const std::string &text) {
   notifyText.setText(text, true);
@@ -68,11 +74,8 @@ void MainScreen::refreshInventoryCounts() {
   // Set display lines
   for (int i = 0; i < 3; i++) {
     auto oldText = inventoryContents[i].get().getText();
-    auto oldTextStr = std::get_if<std::string>(&oldText);
-    if (oldTextStr) {
-      if (*oldTextStr == display_lines[i]) {
-        return;
-      }
+    if (oldText == display_lines[i]) {
+      return;
     }
     inventoryContents[i].get().setText(display_lines[i], true,
                                        GAME_COLORS::WHITE_BLACK);
@@ -138,34 +141,32 @@ MainScreen::MainScreen()
   (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT,
                                 GAME_COLORS::YELLOW_BLACK, 1);
   using Items = SaveData::Items;
-  addCraftingOption<std::string>(
-      '1',
-      {{GAME_COLORS::WHITE_BLACK, "[1] "s},
-       {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}},
-      getOrThrow(recipes.get(Items::IRON), "Invalid recipe"));
-  addCraftingOption<std::string>(
-      '2',
-      {{GAME_COLORS::WHITE_BLACK, "[2] "s},
-       {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}},
-      getOrThrow(recipes.get(Items::COPPER), "Invalid recipe"));
-  addCraftingOption<std::string>(
+  addCraftingOption('1',
+                    {{GAME_COLORS::WHITE_BLACK, "[1] "s},
+                     {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}},
+                    getOrThrow(recipes.get(Items::IRON), "Invalid recipe"sv));
+  addCraftingOption('2',
+                    {{GAME_COLORS::WHITE_BLACK, "[2] "s},
+                     {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}},
+                    getOrThrow(recipes.get(Items::COPPER), "Invalid recipe"sv));
+  addCraftingOption(
       '3',
       {{GAME_COLORS::WHITE_BLACK, "[3] "s},
        {GAME_COLORS::YELLOW_BLACK, "Iron Gear 1x "s},
        {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}},
-      getOrThrow(recipes.get(Items::IRON_GEAR), "Invalid recipe"));
-  addCraftingOption<std::string>(
+      getOrThrow(recipes.get(Items::IRON_GEAR), "Invalid recipe"sv));
+  addCraftingOption(
       '4',
       {{GAME_COLORS::WHITE_BLACK, "[4] "s},
        {GAME_COLORS::YELLOW_BLACK, "Copper Wire 3x "s},
        {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}},
-      getOrThrow(recipes.get(Items::COPPER_WIRE), "Invalid recipe"));
-  addCraftingOption<std::string>(
+      getOrThrow(recipes.get(Items::COPPER_WIRE), "Invalid recipe"sv));
+  addCraftingOption(
       '5',
       {{GAME_COLORS::WHITE_BLACK, "[5] "s},
        {GAME_COLORS::YELLOW_BLACK, "Motor 1x "s},
        {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"s}},
-      getOrThrow(recipes.get(Items::MOTOR), "Invalid recipe"));
+      getOrThrow(recipes.get(Items::MOTOR), "Invalid recipe"sv));
   (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s,
                                       GAME_COLORS::DEFAULT);
   (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s,

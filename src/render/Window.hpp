@@ -75,24 +75,21 @@ public:
 
   void render();
 
-  template <TextString T>
-  Text &putText(int textY, int textX, const T &text, int text_color_pair = 0) {
+  Text &putText(int textY, int textX, std::string text,
+                int text_color_pair = 0) {
     texts.push_back(
         std::make_unique<Text>(textY, textX, text, text_color_pair, win.get()));
     return *texts.back();
   }
 
-  template <TextString T>
   Text &putText(int textY, int textX,
-                const std::span<const Text::TextChunk<T>> chunks) {
+                const std::span<const Text::TextChunk> chunks) {
     texts.push_back(std::make_unique<Text>(textY, textX, chunks, win.get()));
     return *texts.back();
   }
 
-  template <TextString T>
   std::reference_wrapper<Text>
-  putText(int textY, int textX,
-          const std::initializer_list<const Text::TextChunk<T>> chunks) {
+  putText(int textY, int textX, std::initializer_list<Text::TextChunk> chunks) {
     texts.push_back(std::make_unique<Text>(textY, textX, chunks, win.get()));
     return *texts.back();
   }

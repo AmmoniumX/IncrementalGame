@@ -28,18 +28,18 @@ cmake --build . --config Release
 
 2. Build PDCurses with widechar enabled:
 ```
-git clone https://github.com/wmcbrine/PDCurses.git
-cd .\PDCurses\wincon
-nmake.exe -f .\Makefile.vc WIDE=Y
+git clone https://github.com/Bill-Gray/PDCursesMod.git
+cd .\PDCursesMod\wincon
+nmake.exe -f .\Makefile.vc UTF8=Y
 ```
 
 3. Build this project: 
 ```
 New-Item -Type Directory .\build
 cd .\build
-cmake .. -DCMAKE_PREFIX_PATH="C:/Path/To/PDCurses;C:/Path/To/PDCurses/wincon"
+cmake .. -DCMAKE_PREFIX_PATH="C:/Path/To/PDCursesMod;C:/Path/To/PDCursesMod/wincon"
 cmake --build . --config Release
 ```
 
-(Note: Replace both paths of CMAKE_PREFIX_PATH with the location of the cloned PDCurses/ and PDCurses/wincon/)
+(Note: Replace both paths of `CMAKE_PREFIX_PATH` with the location of the cloned PDCurses/ and PDCurses/wincon/)
 
