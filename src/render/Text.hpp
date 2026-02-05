@@ -12,6 +12,8 @@
 
 #include <curses.h>
 
+#include "../Logger.hpp"
+
 class Text {
 public:
   struct TextChunk {
@@ -57,8 +59,9 @@ public:
   int getY() const;
 
   void setText(std::string new_text, bool clear = false, int color_pair = 0) {
-    if (clear)
+    if (clear) {
       needsClear = std::max(needsClear, getVisualLength());
+    }
     textChunks = std::vector<TextChunk>({{color_pair, new_text}});
   }
 

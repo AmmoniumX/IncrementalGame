@@ -2,12 +2,8 @@
 #include <numeric>
 #include <ranges>
 #include <string>
-#include <type_traits>
 #include <uchar.h>
-#include <variant>
 #include <wchar.h>
-
-#include "./wutils.hpp"
 
 #include "Text.hpp"
 
@@ -27,7 +23,7 @@ void Text::doClear() {
 }
 
 size_t Text::getVisualLengthOf(const TextChunk &chunk) {
-  return wutils::uswidth(wutils::s_to_u8s(chunk.text));
+  return chunk.text.length();
 }
 
 size_t Text::getLength() const {

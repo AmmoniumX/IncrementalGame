@@ -10,8 +10,9 @@
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-void MainScreen::notify(const std::string &text) {
-  notifyText.setText(text, true);
+void MainScreen::notify(std::string_view text) {
+  Logger::println("{}", text);
+  notifyText.setText(std::string{text}, true);
   notifyStart = Clock::now();
 }
 
@@ -40,7 +41,7 @@ void MainScreen::switchWindow(Subwindows target) {
 
 void MainScreen::refreshInventoryCounts() {
 
-  const std::map<std::string, BigNum> items = save.getItems();
+  const SaveData::Map items = save.getItems();
 
   static size_t charsPerLine = COLS - 2;
   std::array<std::string, 3> display_lines({"", "", ""});
@@ -183,6 +184,7 @@ void MainScreen::onTick() {
   if (notifyStart.has_value()) {
     auto now = Clock::now();
     if (now - *notifyStart > NOTIF_DURATION) {
+      Logger::println("Clearing notification");
       notifyText.reset();
       notifyStart.reset();
     }

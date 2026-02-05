@@ -11,6 +11,8 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <unordered_map>
 
 using namespace std::string_literals;
@@ -52,7 +54,7 @@ private:
 
   Subwindows activeWindow = CRAFTING;
 
-  void notify(const std::string &text);
+  void notify(std::string_view text);
 
   void rotateWindows();
 

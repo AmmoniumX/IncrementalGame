@@ -4,35 +4,52 @@
 #include "../Logger.hpp"
 #include "SaveData.hpp"
 
-const std::map<std::string, BigNum> &SaveData::getItems() const {
-  return items;
-}
+const SaveData::Map &SaveData::getItems() const { return items; }
 
-BigNum SaveData::getItem(const std::string_view _item) const {
-  std::string item(_item);
-  auto it = items.find(std::string(item));
-  if (it != items.end()) {
+BigNum SaveData::getItem(const std::string_view id) const {
+  if (auto it = items.find(id); it != items.end()) {
     return it->second;
   }
   return BigNum(0); // Return 0 if item not found
 }
 
-void SaveData::setItem(const std::string_view _item, const BigNum &amount) {
-  std::string item(_item);
-  items[item] = amount;
+void SaveData::setItem(const std::string_view id, const BigNum &amount) {
+  items.insert_or_assign(std::string(id), amount);
 }
 
-void SaveData::addItem(const std::string_view _item, const BigNum &amount) {
-  std::string item(_item);
-  items[item] += amount;
+void SaveData::addItem(const std::string_view id, const BigNum &amount) {
+  if (auto it = items.find(id); it != items.end()) {
+    it->second += amount; // Fix: Access .second
+    return;
+  }
+  items.emplace(
+      id, amount); // Fix: Use emplace for string_view to string conversion
 }
 
-void SaveData::subtractItem(const std::string_view _item,
-                            const BigNum &amount) {
-  std::string item(_item);
-  items[item] -= amount;
-  if (items[item] < BigNum(0)) {
-    items[item] = BigNum(0); // Prevent negative amounts
+void SaveData::subtractItem(const std::string_view id, const BigNum &amount) {
+  if (auto it = items.find(id); it != items.end()) {
+    it->second -= amount;
+    if (it->second < 0)
+      it->second = 0;
+  } else {
+    items.emplace(id, 0);
+  }
+}
+
+const SaveData::Map &SaveData::getUpgrades() const { return upgrades; }
+
+BigNum SaveData::getUpgradeLvl(const std::string_view id) const {
+  if (auto it = upgrades.find(id); it != upgrades.end()) {
+    return it->second;
+  }
+  return BigNum(0); // Return 0 if item not found
+}
+
+void SaveData::addUpgradeLvl(const std::string_view id, const BigNum &lvl) {
+  if (auto it = upgrades.find(id); it != upgrades.end()) {
+    it->second += lvl;
+  } else {
+    upgrades.emplace(id, lvl);
   }
 }
 

@@ -2,6 +2,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -25,21 +26,27 @@ public:
 
   // TODO store as JSON and implement recipe (de)serialization
   using Items = SaveData::Items;
-  std::unordered_map<string, Recipe> recipes{
-      {Items::IRON, {"crafting", {}, {{Items::IRON, 1}}}},
-      {Items::COPPER, {"crafting", {}, {{Items::COPPER, 1}}}},
-      {Items::IRON_GEAR,
-       {"crafting", {{Items::IRON, 4}}, {{Items::IRON_GEAR, 1}}}},
-      {Items::COPPER_WIRE,
-       {"crafting", {{Items::COPPER, 1}}, {{Items::COPPER_WIRE, 3}}}},
-      {Items::MOTOR,
-       {"crafting",
-        {{Items::IRON_GEAR, 2}, {Items::COPPER_WIRE, 10}},
-        {{Items::MOTOR, 1}}}}};
+  using ItemStack = SaveData::ItemStack;
+  std::unordered_map<std::string, Recipe> recipes{
+      {std::string(Items::IRON),
+       Recipe{"crafting", {}, {ItemStack{Items::IRON, 1}}}},
+      {std::string(Items::COPPER),
+       Recipe{"crafting", {}, {ItemStack{Items::COPPER, 1}}}},
+      {std::string(Items::IRON_GEAR), Recipe{"crafting",
+                                             {ItemStack{Items::IRON, 4}},
+                                             {ItemStack{Items::IRON_GEAR, 1}}}},
+      {std::string(Items::COPPER_WIRE),
+       Recipe{"crafting",
+              {ItemStack{Items::COPPER, 1}},
+              {ItemStack{Items::COPPER_WIRE, 3}}}},
+      {std::string(Items::MOTOR), Recipe{"crafting",
+                                         {ItemStack{Items::IRON_GEAR, 2},
+                                          ItemStack{Items::COPPER_WIRE, 10}},
+                                         {ItemStack{Items::MOTOR, 1}}}}};
 
-  void add(std::string id, Recipe recipe);
+  void add(std::string_view id, Recipe recipe);
 
-  std::optional<const Recipe> get(std::string id);
+  std::optional<const Recipe> get(std::string_view id);
 
   static void init();
 

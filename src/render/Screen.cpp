@@ -1,5 +1,6 @@
 #include <curses.h>
 
+#include "../Logger.hpp"
 #include "Screen.hpp"
 
 Text &Screen::putText(int y, int x, const std::string &text, int color_pair) {

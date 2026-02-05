@@ -1,15 +1,41 @@
 #pragma once
 
 #include <fstream>
-#include <map>
+#include <functional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 
 #include "../game.hpp"
 
+using namespace std::string_view_literals;
+
+// A custom hash function object that can handle std::string, std::string_view,
+// and const char*
+struct StringHash {
+  // This using declaration enables the heterogeneous lookup
+  using is_transparent = void;
+
+  [[nodiscard]] size_t operator()(std::string_view txt) const {
+    return std::hash<std::string_view>{}(txt);
+  }
+  [[nodiscard]] size_t operator()(const std::string &txt) const {
+    return std::hash<std::string>{}(txt);
+  }
+  [[nodiscard]] size_t operator()(const char *txt) const {
+    return std::hash<std::string_view>{}(
+        txt); // use string_view hash for const char*
+  }
+};
+
 class SaveData {
+public:
+  using Map =
+      std::unordered_map<std::string, BigNum, StringHash, std::equal_to<>>;
+
 private:
-  std::map<std::string, BigNum> items;
+  Map items{};
+  Map upgrades{};
   SaveData() = default;
 
   void fromJson(const json &);
@@ -21,28 +47,49 @@ public:
     return instance;
   }
 
+  // List of all Items
   struct Items {
-    static inline const std::string IRON = "Iron";
-    static inline const std::string COPPER = "Copper";
-    static inline const std::string IRON_GEAR = "Iron Gear";
-    static inline const std::string COPPER_WIRE = "Copper Wire";
-    static inline const std::string MOTOR = "Motor";
+    static constexpr auto IRON = "Iron"sv;
+    static constexpr auto COPPER = "Copper"sv;
+    static constexpr auto IRON_GEAR = "Iron Gear"sv;
+    static constexpr auto COPPER_WIRE = "Copper Wire"sv;
+    static constexpr auto MOTOR = "Motor"sv;
   };
 
   struct ItemStack {
-    const std::string id;
-    const BigNum amount;
+    std::string id;
+    BigNum amount;
+
+    ItemStack(std::string id, BigNum amount) : id{id}, amount{amount} {};
+    ItemStack(std::string_view id, BigNum amount) : id{id}, amount{amount} {};
   };
 
-  const std::map<std::string, BigNum> &getItems() const;
+  struct Upgrades {
+    static constexpr auto DOUBLE_RAW_PRODUCTION = "DoubleRawProduction"sv;
+  };
 
-  BigNum getItem(const std::string_view _item) const;
+  struct Upgrade {
+    std::string id;
+    BigNum lvl;
+  };
 
-  void setItem(const std::string_view _item, const BigNum &amount);
+  const Map &getItems() const;
 
-  void addItem(const std::string_view _item, const BigNum &amount);
+  BigNum getItem(const std::string_view id) const;
 
-  void subtractItem(const std::string_view _item, const BigNum &amount);
+  void setItem(const std::string_view id, const BigNum &amount);
+
+  void addItem(const std::string_view id, const BigNum &amount);
+
+  void subtractItem(const std::string_view id, const BigNum &amount);
+
+  const Map &getUpgrades() const;
+
+  BigNum getUpgradeLvl(const std::string_view id) const;
+
+  void setUpgradeLvl(const std::string_view id, const BigNum &lvl);
+
+  void addUpgradeLvl(const std::string_view id, const BigNum &lvl);
 
   void serialize(std::ofstream &file) const;
 
