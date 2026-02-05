@@ -1,3 +1,4 @@
+#include <ranges>
 #include <string>
 #include <string_view>
 
@@ -108,6 +109,57 @@ bool MainScreen::attemptRecipe(SaveData &save, Recipes::Recipe recipe) {
   return true;
 }
 
+void MainScreen::addCraftingRecipe(char input,
+                                   const std::span<Text::TextChunk> &init,
+                                   const Recipes::Recipe &recipe) {
+  craftingWindow.putText(++numCraftingOptions, 1, init);
+  registerListener(input, [recipe](MainScreen *scr, SaveData &save) {
+    scr->attemptRecipe(save, recipe);
+  });
+}
+
+void MainScreen::addAllCraftingRecipes(const Recipes::RecipeSet &recipes) {
+  char input = '1';
+  for (const auto &[id, recipe] :
+       Recipes::instance().getRecipes() | std::views::filter([](const auto &r) {
+         return r.second.recipe_type == "crafting";
+       })) {
+    std::string outputs{}, inputs{};
+    bool first = true;
+    for (const auto &output : recipe.outputs) {
+      if (!first) {
+        outputs.append(", ");
+      }
+      outputs.append(output.to_string());
+      first = false;
+    }
+    first = true;
+    for (const auto &input : recipe.inputs) {
+      if (!first) {
+        inputs.append(", ");
+      }
+      inputs.append(input.to_string());
+      first = false;
+    }
+
+    auto text = std::vector<Text::TextChunk>{
+        {GAME_COLORS::WHITE_BLACK, std::format("[{}] ", input)}};
+
+    if (!outputs.empty()) {
+      text.emplace_back(GAME_COLORS::YELLOW_BLACK, outputs);
+    }
+
+    if (!inputs.empty()) {
+      text.emplace_back(GAME_COLORS::GRAY_BLACK,
+                        std::format(" (requires: {})", inputs));
+    }
+
+    addCraftingRecipe(input, text, recipe);
+
+    input++;
+  }
+}
+
 MainScreen::MainScreen()
     : Screen(),
       // Initialize reference_wrapper members here
@@ -141,33 +193,7 @@ MainScreen::MainScreen()
                          upgradesWindow.putText(1, 1, "Example"s));
   (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT,
                                 GAME_COLORS::YELLOW_BLACK, 1);
-  namespace Items = Save::Items;
-  addCraftingOption('1',
-                    {{GAME_COLORS::WHITE_BLACK, "[1] "s},
-                     {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}},
-                    getOrThrow(recipes.get(Items::IRON), "Invalid recipe"sv));
-  addCraftingOption('2',
-                    {{GAME_COLORS::WHITE_BLACK, "[2] "s},
-                     {GAME_COLORS::YELLOW_BLACK, "Copper Ingot 1x"s}},
-                    getOrThrow(recipes.get(Items::COPPER), "Invalid recipe"sv));
-  addCraftingOption(
-      '3',
-      {{GAME_COLORS::WHITE_BLACK, "[3] "s},
-       {GAME_COLORS::YELLOW_BLACK, "Iron Gear 1x "s},
-       {GAME_COLORS::GRAY_BLACK, "(requires: 4 Iron Ingot)"s}},
-      getOrThrow(recipes.get(Items::IRON_GEAR), "Invalid recipe"sv));
-  addCraftingOption(
-      '4',
-      {{GAME_COLORS::WHITE_BLACK, "[4] "s},
-       {GAME_COLORS::YELLOW_BLACK, "Copper Wire 3x "s},
-       {GAME_COLORS::GRAY_BLACK, "(requires: 1 Copper Ingot)"s}},
-      getOrThrow(recipes.get(Items::COPPER_WIRE), "Invalid recipe"sv));
-  addCraftingOption(
-      '5',
-      {{GAME_COLORS::WHITE_BLACK, "[5] "s},
-       {GAME_COLORS::YELLOW_BLACK, "Motor 1x "s},
-       {GAME_COLORS::GRAY_BLACK, "(requires: 2 Iron Gear, 10 Copper Wire)"s}},
-      getOrThrow(recipes.get(Items::MOTOR), "Invalid recipe"sv));
+  addAllCraftingRecipes(recipes.getRecipes());
   (void)sidebarCraftingWindow.putText(1, 1, "[C]rafting"s,
                                       GAME_COLORS::DEFAULT);
   (void)sidebarUpgradesWindow.putText(1, 1, "[U]pgrades"s,

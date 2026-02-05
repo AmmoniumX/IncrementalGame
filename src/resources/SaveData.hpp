@@ -1,5 +1,6 @@
 #pragma once
 
+#include <format>
 #include <fstream>
 #include <functional>
 #include <string>
@@ -31,6 +32,7 @@ struct StringHash {
 
 // List of all Items
 namespace Items {
+static constexpr auto BILLS = "Bills"sv;
 static constexpr auto IRON = "Iron"sv;
 static constexpr auto COPPER = "Copper"sv;
 static constexpr auto IRON_GEAR = "Iron Gear"sv;
@@ -65,8 +67,14 @@ public:
     std::string id;
     BigNum amount;
 
-    ItemStack(std::string id, BigNum amount) : id{id}, amount{amount} {};
-    ItemStack(std::string_view id, BigNum amount) : id{id}, amount{amount} {};
+    ItemStack(std::string_view id, const BigNum &amount)
+        : id{id}, amount{amount} {};
+    bool operator==(const ItemStack &other) const {
+      return id == other.id && amount == other.amount;
+    };
+    std::string to_string() const {
+      return std::format("{} {}x", id, amount.to_string());
+    }
   };
 
   struct Upgrade {

@@ -11,6 +11,7 @@
 #include <functional>
 #include <map>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -76,14 +77,10 @@ private:
                         std::function<void(MainScreen *, SaveData &)> listener);
 
   int numCraftingOptions = 0;
-  void addCraftingOption(char input,
-                         std::initializer_list<Text::TextChunk> init,
-                         Recipes::Recipe recipe) {
-    craftingWindow.putText(++numCraftingOptions, 1, init);
-    registerListener(input, [recipe](MainScreen *scr, SaveData &save) {
-      scr->attemptRecipe(save, recipe);
-    });
-  }
+  void addCraftingRecipe(char input, const std::span<Text::TextChunk> &init,
+                         const Recipes::Recipe &recipe);
+
+  void addAllCraftingRecipes(const Recipes::RecipeSet &recipes);
 
   bool attemptRecipe(SaveData &save, Recipes::Recipe recipe);
 
