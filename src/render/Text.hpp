@@ -12,8 +12,6 @@
 
 #include <curses.h>
 
-#include "../Logger.hpp"
-
 class Text {
 public:
   struct TextChunk {

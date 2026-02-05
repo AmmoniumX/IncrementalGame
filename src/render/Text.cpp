@@ -6,6 +6,7 @@
 #include <wchar.h>
 
 #include "Text.hpp"
+#include "wutils.hpp"
 
 void Text::doClear() {
   if (needsClear <= 0) {
@@ -23,7 +24,7 @@ void Text::doClear() {
 }
 
 size_t Text::getVisualLengthOf(const TextChunk &chunk) {
-  return chunk.text.length();
+  return wutils::uswidth(wutils::s_to_u8s(chunk.text));
 }
 
 size_t Text::getLength() const {

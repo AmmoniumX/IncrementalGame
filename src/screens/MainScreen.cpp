@@ -141,7 +141,7 @@ MainScreen::MainScreen()
                          upgradesWindow.putText(1, 1, "Example"s));
   (void)craftingWindow.setTitle("Crafting", Window::Alignment::LEFT,
                                 GAME_COLORS::YELLOW_BLACK, 1);
-  using Items = SaveData::Items;
+  namespace Items = Save::Items;
   addCraftingOption('1',
                     {{GAME_COLORS::WHITE_BLACK, "[1] "s},
                      {GAME_COLORS::YELLOW_BLACK, "Iron Ingot 1x"s}},

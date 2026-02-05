@@ -15,13 +15,13 @@
 #include "Logger.hpp"
 #include "game.hpp"
 
-namespace fs = std::filesystem;
-
 // Constants
-std::atomic_bool Game::exit = false;
+namespace fs = std::filesystem;
 using nlohmann::json;
 using Clock = std::chrono::steady_clock;
 using namespace std::chrono_literals;
+using Save::SaveData;
+std::atomic_bool Game::exit = false;
 namespace detail {
 std::ofstream logstream;
 }

@@ -8,6 +8,7 @@
 
 #include "../game.hpp"
 
+namespace Save {
 using namespace std::string_view_literals;
 
 // A custom hash function object that can handle std::string, std::string_view,
@@ -28,6 +29,19 @@ struct StringHash {
   }
 };
 
+// List of all Items
+namespace Items {
+static constexpr auto IRON = "Iron"sv;
+static constexpr auto COPPER = "Copper"sv;
+static constexpr auto IRON_GEAR = "Iron Gear"sv;
+static constexpr auto COPPER_WIRE = "Copper Wire"sv;
+static constexpr auto MOTOR = "Motor"sv;
+} // namespace Items
+
+namespace Upgrades {
+static constexpr auto DRONE_CRAFTING = "DroneCraftingUnlock"sv;
+} // namespace Upgrades
+
 class SaveData {
 public:
   using Map =
@@ -47,25 +61,12 @@ public:
     return instance;
   }
 
-  // List of all Items
-  struct Items {
-    static constexpr auto IRON = "Iron"sv;
-    static constexpr auto COPPER = "Copper"sv;
-    static constexpr auto IRON_GEAR = "Iron Gear"sv;
-    static constexpr auto COPPER_WIRE = "Copper Wire"sv;
-    static constexpr auto MOTOR = "Motor"sv;
-  };
-
   struct ItemStack {
     std::string id;
     BigNum amount;
 
     ItemStack(std::string id, BigNum amount) : id{id}, amount{amount} {};
     ItemStack(std::string_view id, BigNum amount) : id{id}, amount{amount} {};
-  };
-
-  struct Upgrades {
-    static constexpr auto DOUBLE_RAW_PRODUCTION = "DoubleRawProduction"sv;
   };
 
   struct Upgrade {
@@ -100,3 +101,5 @@ public:
   SaveData &operator=(const SaveData &) = delete;
   ~SaveData() = default;
 };
+
+} // namespace Save

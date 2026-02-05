@@ -4,6 +4,8 @@
 #include "../Logger.hpp"
 #include "SaveData.hpp"
 
+using namespace Save;
+
 const SaveData::Map &SaveData::getItems() const { return items; }
 
 BigNum SaveData::getItem(const std::string_view id) const {
@@ -53,29 +55,40 @@ void SaveData::addUpgradeLvl(const std::string_view id, const BigNum &lvl) {
   }
 }
 
+void saveCategory(json &j, const std::string &category,
+                  const SaveData::Map &map) {
+  auto &j_category = j[category] = json::object();
+
+  for (const auto &item : map) {
+    j_category[item.first] = item.second.serialize();
+  }
+}
+
 json SaveData::toJson() const {
   json j = json::object();
-  // Items
-  auto &j_items = j["items"];
-  for (const auto &item : items) {
-    j_items[item.first] = item.second.serialize();
-  }
+  saveCategory(j, "items", items);
+  saveCategory(j, "upgrades", upgrades);
   return j;
 }
 
-void SaveData::fromJson(const json &j) {
-  if (j.contains("items") && j["items"].is_object()) {
-    const auto &j_items = j["items"];
+void readCategory(const json &j, const std::string &category,
+                  SaveData::Map &map) {
+  if (j.contains(category) && j[category].is_object()) {
+    const auto &j_category = j[category];
 
-    // Iterate through the nested "items" object
-    for (auto it = j_items.begin(); it != j_items.end(); ++it) {
+    for (auto it = j_category.begin(); it != j_category.end(); ++it) {
       std::string key = it.key();
       auto &value = it.value();
 
       std::string valueStr = value.is_string() ? value.get<std::string>() : "0";
-      items[key] = BigNum::deserialize(valueStr);
+      map[key] = BigNum::deserialize(valueStr);
     }
   }
+}
+
+void SaveData::fromJson(const json &j) {
+  readCategory(j, "items", items);
+  readCategory(j, "upgrades", upgrades);
 }
 
 void SaveData::serialize(std::ofstream &file) const {

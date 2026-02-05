@@ -8,6 +8,8 @@
 
 #include "./SaveData.hpp"
 
+using namespace Save;
+
 class Recipes {
 private:
   Recipes() = default;
@@ -25,7 +27,6 @@ public:
   }
 
   // TODO store as JSON and implement recipe (de)serialization
-  using Items = SaveData::Items;
   using ItemStack = SaveData::ItemStack;
   std::unordered_map<std::string, Recipe> recipes{
       {std::string(Items::IRON),
